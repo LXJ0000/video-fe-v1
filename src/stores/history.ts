@@ -6,7 +6,8 @@ interface HistoryItem {
   videoId: string
   title: string
   timestamp: number
-  progress: number
+  progress: number  // 播放进度（秒）
+  duration: number  // 视频总时长（秒）
 }
 
 export const useHistoryStore = defineStore('history', () => {
@@ -20,13 +21,14 @@ export const useHistoryStore = defineStore('history', () => {
     }
   }
 
-  // 添加观看记录
-  const addHistory = (video: VideoItem, progress: number) => {
+  // 添加/更新观看记录
+  const updateHistory = (video: VideoItem, progress: number) => {
     const item: HistoryItem = {
       videoId: video.id,
       title: video.title,
       timestamp: Date.now(),
-      progress
+      progress,
+      duration: video.duration
     }
 
     // 移除旧的相同视频记录
@@ -42,9 +44,16 @@ export const useHistoryStore = defineStore('history', () => {
     localStorage.setItem('videoHistory', JSON.stringify(history.value))
   }
 
+  // 获取视频播放进度
+  const getVideoProgress = (videoId: string): number => {
+    const item = history.value.find(h => h.videoId === videoId)
+    return item?.progress || 0
+  }
+
   return {
     history,
     loadHistory,
-    addHistory
+    updateHistory,
+    getVideoProgress
   }
 }) 

@@ -317,3 +317,81 @@ src/
 2. 实现视频预览功能
 3. 优化移动端适配
 4. 添加用户系统 
+
+# 智能视频播放器
+
+一个支持智能调速的在线视频播放器。
+
+## 功能特性
+
+### 1. 智能调速
+- **原理**: 通过分析音频特征，自动调整播放速度以匹配目标语速
+- **核心功能**:
+  - 实时音频分析
+  - 自适应速度调整
+  - 平滑变速过渡
+  - 可配置目标语速(WPM)
+
+### 2. 播放控制
+- 基础播放控制(播放/暂停/进度)
+- 音量控制
+- 手动速度调节
+- 全屏支持
+
+### 3. 用户设置
+- 目标语速设置(80-300 WPM)
+- 播放速度范围限制(0.25x-3.0x)
+- 设置自动保存
+
+## 技术实现
+
+### 智能调速算法
+```typescript
+// 1. 音频分析
+analyzeSpeech(audioData: Float32Array) {
+  // 计算音量
+  const volume = calculateVolume(audioData)
+  
+  // 估算当前语速
+  const baseWPM = userPreferences.targetWPM
+  const newWPM = baseWPM * (1 + (volume * volumeScale / baseWPM - 0.5))
+  
+  // 平滑处理
+  currentWPM = smooth(lastWPM, newWPM)
+}
+
+// 2. 速度调整
+suggestedSpeed = computed(() => {
+  // 计算目标速度比率
+  const targetSpeed = targetWPM / currentWPM
+  
+  // 渐进式调整
+  let newSpeed = currentSpeed
+  if (targetSpeed > currentSpeed) {
+    newSpeed = Math.min(currentSpeed + 0.1, targetSpeed)
+  } else if (targetSpeed < currentSpeed) {
+    newSpeed = Math.max(currentSpeed - 0.1, targetSpeed)
+  }
+  
+  // 限制范围
+  return clamp(newSpeed, speedRange.min, speedRange.max)
+})
+```
+
+### 技术栈
+- Vue 3 + TypeScript
+- Pinia 状态管理
+- Web Audio API
+- Plyr 播放器
+
+## 使用说明
+
+1. 开启智能调速
+2. 设置目标语速(WPM)
+3. 系统会自动调整播放速度以匹配目标语速
+
+## 注意事项
+
+- 智能调速功能需要音频支持
+- 建议目标语速设置在 80-300 WPM 范围内
+- 播放速度变化平滑，可能需要短暂时间达到目标速度 
