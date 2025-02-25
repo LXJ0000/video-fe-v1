@@ -124,7 +124,7 @@
           </div>
 
           <!-- 标记和笔记按钮 -->
-          <div class="flex flex-wrap items-center gap-3">
+          <!-- <div class="flex flex-wrap items-center gap-3">
             <button
               @click="handleAddMark"
               class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors shrink-0"
@@ -144,7 +144,7 @@
               </svg>
               <span class="whitespace-nowrap">添加笔记</span>
             </button>
-          </div>
+          </div> -->
         </div>
 
         <!-- 视频信息 -->
@@ -229,7 +229,7 @@
               <!-- 添加按钮 -->
               <div class="mb-4">
                 <button
-                  @click="activeTab === 'marks' ? handleAddMark : handleAddNote"
+                  @click="activeTab === 'marks' ? handleAddMark() : handleAddNote()"
                   class="w-full px-4 py-2 text-sm text-white bg-primary-light hover:bg-primary rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -637,6 +637,7 @@ const toggleSidebar = () => {
 }
 
 const handleAddMark = async () => {
+  console.log('handleAddMark')
   if (!videoPlayer.value || !video.value) return
   
   const timestamp = videoPlayer.value.currentTime
@@ -649,6 +650,7 @@ const handleAddMark = async () => {
 }
 
 const handleAddNote = async () => {
+  console.log('handleAddNote')
   if (!videoPlayer.value || !video.value) return
   
   const timestamp = videoPlayer.value.currentTime
