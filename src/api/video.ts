@@ -112,19 +112,42 @@ export const videoApi = {
     timestamp: number
     content: string
   }) {
-    return apiClient.post(API_ENDPOINTS.MARKS(userId, videoId), markData)
+    return apiClient.post(API_ENDPOINTS.MARKS(userId, videoId), {
+      videoId,
+      ...markData
+    })
   },
 
-  addAnnotation(markId: string, data: { content: string }) {
-    return apiClient.post(API_ENDPOINTS.MARK_ANNOTATIONS(markId), data)
+  updateMark(userId: string, videoId: string, markId: string, data: {
+    content: string
+    timestamp: number
+  }) {
+    return apiClient.put(API_ENDPOINTS.MARK_UPDATE(userId, videoId, markId), data)
   },
 
-  deleteMark(markId: string) {
-    return apiClient.delete(API_ENDPOINTS.MARK_DELETE(markId))
+  deleteMark(userId: string, videoId: string, markId: string) {
+    return apiClient.delete(API_ENDPOINTS.MARK_DELETE(userId, videoId, markId))
   },
 
-  deleteAnnotation(markId: string, annotationId: string) {
-    return apiClient.delete(API_ENDPOINTS.MARK_ANNOTATION_DELETE(markId, annotationId))
+  // 注释相关
+  getAnnotations(userId: string, videoId: string, markId: string) {
+    return apiClient.get(API_ENDPOINTS.MARK_ANNOTATIONS(userId, videoId, markId))
+  },
+
+  addAnnotation(userId: string, videoId: string, markId: string, data: {
+    content: string
+  }) {
+    return apiClient.post(API_ENDPOINTS.MARK_ANNOTATIONS(userId, videoId, markId), data)
+  },
+
+  updateAnnotation(userId: string, videoId: string, annotationId: string, data: {
+    content: string
+  }) {
+    return apiClient.put(API_ENDPOINTS.MARK_ANNOTATION_UPDATE(userId, videoId, annotationId), data)
+  },
+
+  deleteAnnotation(userId: string, videoId: string, annotationId: string) {
+    return apiClient.delete(API_ENDPOINTS.MARK_ANNOTATION_DELETE(userId, videoId, annotationId))
   },
 
   // 笔记相关
@@ -136,11 +159,26 @@ export const videoApi = {
     timestamp: number
     content: string
   }) {
-    return apiClient.post(API_ENDPOINTS.NOTES(userId, videoId), noteData)
+    return apiClient.post(API_ENDPOINTS.NOTES(userId, videoId), {
+      videoId,
+      ...noteData
+    })
   },
 
-  deleteNote(noteId: string) {
-    return apiClient.delete(API_ENDPOINTS.NOTE_DELETE(noteId))
+  updateNote(userId: string, videoId: string, noteId: string, data: {
+    content: string
+    timestamp: number
+  }) {
+    return apiClient.put(API_ENDPOINTS.NOTE_UPDATE(userId, videoId, noteId), data)
+  },
+
+  deleteNote(userId: string, videoId: string, noteId: string) {
+    return apiClient.delete(API_ENDPOINTS.NOTE_DELETE(userId, videoId, noteId))
+  },
+
+  // 导出功能
+  exportData(userId: string, videoId: string) {
+    return apiClient.get<ExportData>(API_ENDPOINTS.EXPORT(userId, videoId))
   }
 }
 
@@ -157,6 +195,7 @@ export interface Mark {
 
 export interface Annotation {
   id: string
+  userId: string
   markId: string
   content: string
   createdAt: string
@@ -169,4 +208,34 @@ export interface Note {
   timestamp: number
   content: string
   createdAt: string
+}
+
+export interface ExportData {
+  marks: Mark[]
+  annotations: Annotation[]
+  notes: Note[]
+}
+
+// 更新请求参数的接口定义
+export interface UpdateMarkParams {
+  content: string
+  timestamp: number
+  id?: string
+  userId?: string
+  videoId?: string
+}
+
+export interface UpdateAnnotationParams {
+  content: string
+  id?: string
+  userId?: string
+  markId?: string
+}
+
+export interface UpdateNoteParams {
+  content: string
+  timestamp: number
+  id?: string
+  userId?: string
+  videoId?: string
 } 

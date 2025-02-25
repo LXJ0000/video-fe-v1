@@ -12,12 +12,22 @@ export const API_ENDPOINTS = {
   VIDEO_BATCH: '/videos/batch',
   VIDEO_STATS: (id: string) => `/videos/${id}/stats`,
   MARKS: (userId: string, videoId: string) => `/marks/${userId}/${videoId}`,
-  MARK_ANNOTATIONS: (markId: string) => `/marks/${markId}/annotations`,
-  MARK_DELETE: (markId: string) => `/marks/${markId}`,
-  MARK_ANNOTATION_DELETE: (markId: string, annotationId: string) => 
-    `/marks/${markId}/annotations/${annotationId}`,
+  MARK_UPDATE: (userId: string, videoId: string, markId: string) => 
+    `/marks/${userId}/${videoId}/${markId}`,
+  MARK_DELETE: (userId: string, videoId: string, markId: string) => 
+    `/marks/${userId}/${videoId}/${markId}`,
+  MARK_ANNOTATIONS: (userId: string, videoId: string, markId: string) => 
+    `/marks/${userId}/${videoId}/annotations/${markId}`,
+  MARK_ANNOTATION_UPDATE: (userId: string, videoId: string, annotationId: string) => 
+    `/marks/${userId}/${videoId}/annotations/${annotationId}`,
+  MARK_ANNOTATION_DELETE: (userId: string, videoId: string, annotationId: string) => 
+    `/marks/${userId}/${videoId}/annotations/${annotationId}`,
   NOTES: (userId: string, videoId: string) => `/notes/${userId}/${videoId}`,
-  NOTE_DELETE: (noteId: string) => `/notes/${noteId}`,
+  NOTE_UPDATE: (userId: string, videoId: string, noteId: string) => 
+    `/notes/${userId}/${videoId}/${noteId}`,
+  NOTE_DELETE: (userId: string, videoId: string, noteId: string) => 
+    `/notes/${userId}/${videoId}/${noteId}`,
+  EXPORT: (userId: string, videoId: string) => `/videos/export/${userId}/${videoId}`,
 } as const
 
 // API 配置

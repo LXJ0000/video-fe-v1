@@ -2,7 +2,7 @@
   <div class="space-y-3">
     <!-- 空状态 -->
     <div 
-      v-if="!marks.length"
+      v-if="!safeMarks.length"
       class="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400"
     >
       <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -14,7 +14,7 @@
     <!-- 标记列表 -->
     <div 
       v-else
-      v-for="mark in marks" 
+      v-for="mark in safeMarks" 
       :key="mark.id"
       class="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden transition-all duration-200 shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700"
     >
@@ -33,7 +33,33 @@
                 {{ formatDate(mark.createdAt) }}
               </time>
             </div>
-            <p class="text-sm text-gray-900 dark:text-white break-words">
+            <!-- 添加编辑模式 -->
+            <div v-if="editingMarkId === mark.id" class="flex gap-2">
+              <input
+                v-model="editingContent"
+                type="text"
+                class="flex-1 px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:border-primary-light dark:focus:border-primary-light focus:ring-2 focus:ring-primary-light/20"
+                @keyup.enter="handleUpdateMark(mark.id)"
+                @keyup.esc="cancelEdit"
+              />
+              <button
+                @click="handleUpdateMark(mark.id)"
+                class="px-2 py-1 text-xs text-white bg-primary-light rounded-lg hover:bg-primary transition-colors"
+              >
+                保存
+              </button>
+              <button
+                @click="cancelEdit"
+                class="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                取消
+              </button>
+            </div>
+            <p 
+              v-else 
+              class="text-sm text-gray-900 dark:text-white break-words"
+              @dblclick="startEdit(mark)"
+            >
               {{ mark.content }}
             </p>
           </div>
@@ -68,7 +94,33 @@
             :key="annotation.id"
             class="flex items-start gap-2 pl-3 border-l-2 border-gray-200 dark:border-gray-700"
           >
-            <p class="flex-1 min-w-0 text-sm text-gray-600 dark:text-gray-300 break-words">
+            <!-- 添加注释编辑模式 -->
+            <div v-if="editingAnnotationId === annotation.id" class="flex-1 flex gap-2">
+              <input
+                v-model="editingContent"
+                type="text"
+                class="flex-1 px-2 py-1 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:border-primary-light dark:focus:border-primary-light focus:ring-2 focus:ring-primary-light/20"
+                @keyup.enter="handleUpdateAnnotation(mark.id, annotation.id)"
+                @keyup.esc="cancelEdit"
+              />
+              <button
+                @click="handleUpdateAnnotation(mark.id, annotation.id)"
+                class="px-2 py-1 text-xs text-white bg-primary-light rounded-lg hover:bg-primary transition-colors"
+              >
+                保存
+              </button>
+              <button
+                @click="cancelEdit"
+                class="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                取消
+              </button>
+            </div>
+            <p 
+              v-else
+              class="flex-1 min-w-0 text-sm text-gray-600 dark:text-gray-300 break-words"
+              @dblclick="startEditAnnotation(annotation)"
+            >
               {{ annotation.content }}
             </p>
             <button
@@ -108,12 +160,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useMarksStore } from '@/stores/marks'
 import type { Mark } from '@/api/video'
 
 const props = defineProps<{
-  marks: Mark[]
+  marks: Mark[] | null
 }>()
 
 const emit = defineEmits<{
@@ -121,8 +173,57 @@ const emit = defineEmits<{
   (e: 'add-annotation', markId: string, content: string): void
 }>()
 
+// 计算属性处理 null 值
+const safeMarks = computed(() => props.marks || [])
+
 const marksStore = useMarksStore()
 const newAnnotations = ref<Record<string, string>>({})
+
+// 编辑相关状态
+const editingMarkId = ref<string | null>(null)
+const editingAnnotationId = ref<string | null>(null)
+const editingContent = ref('')
+
+// 开始编辑标记
+const startEdit = (mark: Mark) => {
+  editingMarkId.value = mark.id
+  editingContent.value = mark.content
+  editingAnnotationId.value = null
+}
+
+// 开始编辑注释
+const startEditAnnotation = (annotation: { id: string; content: string }) => {
+  editingAnnotationId.value = annotation.id
+  editingContent.value = annotation.content
+  editingMarkId.value = null
+}
+
+// 取消编辑
+const cancelEdit = () => {
+  editingMarkId.value = null
+  editingAnnotationId.value = null
+  editingContent.value = ''
+}
+
+// 更新标记
+const handleUpdateMark = async (markId: string) => {
+  if (!editingContent.value.trim()) return
+  const mark = safeMarks.value.find(m => m.id === markId)
+  if (!mark) return
+
+  await marksStore.updateMark(markId, {
+    content: editingContent.value.trim(),
+    timestamp: mark.timestamp
+  })
+  cancelEdit()
+}
+
+// 更新注释
+const handleUpdateAnnotation = async (markId: string, annotationId: string) => {
+  if (!editingContent.value.trim()) return
+  await marksStore.updateAnnotation(markId, annotationId, editingContent.value.trim())
+  cancelEdit()
+}
 
 const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60)

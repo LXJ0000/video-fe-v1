@@ -203,9 +203,9 @@
         </button>
 
         <!-- 侧边栏内容 -->
-        <div class="h-full bg-white dark:bg-gray-800 shadow-lg overflow-hidden rounded-xl">
+        <div class="h-full bg-white dark:bg-gray-800 shadow-lg overflow-hidden rounded-xl flex flex-col">
           <!-- 标签页头部 -->
-          <div class="bg-white dark:bg-gray-800 rounded-t-xl">
+          <div class="bg-white dark:bg-gray-800 rounded-t-xl flex-shrink-0">
             <nav class="flex">
               <button
                 v-for="tab in ['marks', 'notes']"
@@ -224,14 +224,30 @@
           </div>
 
           <!-- 内容区域 -->
-          <div class="p-4 overflow-y-auto h-full custom-scrollbar">
-            <component
-              :is="activeTab === 'marks' ? MarkList : NoteList"
-              :marks="marksStore.marks"
-              :notes="notesStore.notes"
-              @select="seekToTime"
-              @add-annotation="handleAddAnnotation"
-            />
+          <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <div class="p-4">
+              <!-- 添加按钮 -->
+              <div class="mb-4">
+                <button
+                  @click="activeTab === 'marks' ? handleAddMark : handleAddNote"
+                  class="w-full px-4 py-2 text-sm text-white bg-primary-light hover:bg-primary rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5v14m-7-7h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  添加{{ activeTab === 'marks' ? '标记' : '笔记' }}
+                </button>
+              </div>
+
+              <!-- 列表组件 -->
+              <component
+                :is="activeTab === 'marks' ? MarkList : NoteList"
+                :marks="marksStore.marks || []"
+                :notes="notesStore.notes || []"
+                @select="seekToTime"
+                @add-annotation="handleAddAnnotation"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -345,7 +361,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Plyr from 'plyr'
 import 'plyr/dist/plyr.css'
@@ -406,6 +422,12 @@ const sidebarOpen = ref(true)
 const activeTab = ref('marks')
 const marksStore = useMarksStore()
 const notesStore = useNotesStore()
+
+// 添加新的响应式变量
+const newNote = ref('')
+const currentTime = computed(() => videoPlayer.value?.currentTime || 0)
+const videoId = computed(() => video.value?.id || '')
+const currentUserId = ref('test_user_id') // 后续从用户状态获取
 
 // 检查播放器是否可用
 const isPlayerReady = (p: Plyr | null): p is Plyr => {
@@ -486,7 +508,6 @@ const loadVideo = async () => {
     const response = await videoApi.getVideoDetail(route.params.id as string)
     video.value = response.data.data
     videoStreamUrl.value = videoApi.getVideoStreamUrl(route.params.id as string)
-    console.log('Video data:', video.value)
     console.log('Stream URL:', videoStreamUrl.value)
   } catch (err) {
     console.error('Load video error details:', err)
@@ -649,19 +670,26 @@ const seekToTime = (timestamp: number) => {
   }
 }
 
+// 初始化 stores 的数据
+const initializeData = async () => {
+  if (video.value) {
+    try {
+      await Promise.all([
+        marksStore.fetchMarks('test_user_id', video.value.id),
+        notesStore.fetchNotes('test_user_id', video.value.id)
+      ])
+    } catch (error) {
+      console.error('Failed to initialize data:', error)
+    }
+  }
+}
+
 // 修改 onMounted 中的数据加载
 onMounted(async () => {
   historyStore.loadHistory()
   playbackStore.loadPreferences()
   await loadVideo()
-  
-  // 等待视频数据加载完成后再加载标记和笔记
-  if (video.value) {
-    await Promise.all([
-      marksStore.fetchMarks('test_user_id', video.value.id),
-      notesStore.fetchNotes('test_user_id', video.value.id)
-    ])
-  }
+  await initializeData()
 
   // 在小屏幕下默认收起侧边栏
   if (window.innerWidth < 1024) {
@@ -673,12 +701,7 @@ onMounted(async () => {
 watch(() => route.params.id, async (newId) => {
   if (newId) {
     await loadVideo()
-    if (video.value) {
-      await Promise.all([
-        marksStore.fetchMarks('test_user_id', video.value.id),
-        notesStore.fetchNotes('test_user_id', video.value.id)
-      ])
-    }
+    await initializeData()
   }
 })
 
