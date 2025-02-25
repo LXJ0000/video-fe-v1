@@ -1,156 +1,240 @@
 <template>
-  <div class="container mx-auto px-4 py-8 relative">
-    <div class="max-w-4xl mx-auto">
-      <!-- 返回按钮 -->
-      <router-link 
-        to="/" 
-        class="inline-flex items-center mb-6 text-gray-600 dark:text-gray-400 hover:text-primary-dark dark:hover:text-primary-light transition-colors duration-300"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        返回首页
-      </router-link>
+  <div class="container mx-auto px-4 py-8">
+    <!-- 返回按钮 -->
+    <router-link 
+      to="/" 
+      class="inline-flex items-center mb-6 text-gray-600 dark:text-gray-400 hover:text-primary-dark dark:hover:text-primary-light transition-colors duration-300"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      返回首页
+    </router-link>
 
-      <!-- 加载状态 -->
-      <div v-if="isLoading" class="aspect-video bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden mb-6 flex items-center justify-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary-light border-t-transparent"></div>
-      </div>
+    <!-- 主体内容区域使用 flex 布局 -->
+    <div class="flex gap-6">
+      <!-- 左侧主要内容区域 -->
+      <div class="flex-1">
+        <!-- 视频播放器区域 -->
+        <div class="mb-6">
+          <!-- 加载状态 -->
+          <div v-if="isLoading" class="aspect-video bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden flex items-center justify-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary-light border-t-transparent"></div>
+          </div>
 
-      <!-- 错误提示 -->
-      <div v-else-if="error" class="aspect-video bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden mb-6 flex items-center justify-center">
-        <div class="text-center">
-          <p class="text-red-500 mb-4">{{ error }}</p>
-          <button 
-            @click="loadVideo"
-            class="px-4 py-2 bg-primary-light text-white rounded-full hover:bg-primary transition-colors duration-300"
-          >
-            重试
-          </button>
-        </div>
-      </div>
-
-      <!-- 视频播放器 -->
-      <div v-else class="aspect-video bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden mb-6 shadow-lg relative">
-        <!-- 使用原生 video 标签先测试 -->
-        <video
-          ref="videoPlayer"
-          class="w-full h-full object-contain"
-          :src="videoStreamUrl"
-          crossorigin="anonymous"
-          controls
-          autoplay
-          preload="auto"
-          @error="handleVideoError"
-          @loadeddata="handleVideoLoaded"
-          @play="handlePlay"
-        >
-          您的浏览器不支持 HTML5 视频播放。
-          <a :href="videoStreamUrl">下载视频</a>
-        </video>
-      </div>
-
-      <!-- 播放控制区域 -->
-      <div class="flex items-center gap-3 mb-2">
-        <!-- 智能调速开关 -->
-        <div class="relative flex items-center">
-          <label class="flex items-center gap-2">
-            <input
-              type="checkbox"
-              v-model="playbackStore.isAutoSpeedEnabled"
-              class="form-checkbox h-4 w-4 rounded border-gray-300 text-primary-light focus:ring-primary-light/20"
-            >
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">智能调速</span>
-          </label>
-          
-          <!-- 提示图标移到右下角 -->
-          <div class="relative" style="margin: 0 0 -4px 2px">
-            <button
-              type="button"
-              class="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 transition-colors inline-flex items-center"
-              @mouseenter="showTooltip = true"
-              @mouseleave="showTooltip = false"
-            >
-              <QuestionMarkCircleIcon class="h-3.5 w-3.5" />
-            </button>
-            
-            <!-- 工具提示 -->
-            <div
-              v-if="showTooltip"
-              class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-gray-900/90 backdrop-blur-sm text-white rounded-lg shadow-lg z-50 text-xs"
-            >
-              <div class="text-gray-200">
-                <p>通过分析音频特征，自动调整播放速度以匹配您设定的目标语速</p>
-              </div>
-              <!-- 小三角形 -->
-              <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900/90 rotate-45"></div>
+          <!-- 错误提示 -->
+          <div v-else-if="error" class="aspect-video bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden flex items-center justify-center">
+            <div class="text-center">
+              <p class="text-red-500 mb-4">{{ error }}</p>
+              <button 
+                @click="loadVideo"
+                class="px-4 py-2 bg-primary-light text-white rounded-full hover:bg-primary transition-colors duration-300"
+              >
+                重试
+              </button>
             </div>
           </div>
-        </div>
-        
-        <!-- WPM 设置和显示 -->
-        <div v-if="playbackStore.isAutoSpeedEnabled" class="flex items-center gap-4">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">目标语速</span>
-            <input
-              type="number"
-              v-model="playbackStore.userPreferences.targetWPM"
-              class="w-16 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md focus:ring-1 focus:ring-primary-light/30 focus:border-primary-light dark:bg-gray-800 dark:text-gray-300"
-              min="80"
-              max="300"
-              step="10"
-              @change="playbackStore.savePreferences()"
+
+          <!-- 视频播放器 -->
+          <div v-else class="aspect-video bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg">
+            <video
+              ref="videoPlayer"
+              class="w-full h-full object-contain"
+              :src="videoStreamUrl"
+              crossorigin="anonymous"
+              controls
+              autoplay
+              preload="auto"
+              @error="handleVideoError"
+              @loadeddata="handleVideoLoaded"
+              @play="handlePlay"
             >
-            <span class="text-xs text-gray-400 dark:text-gray-500">WPM</span>
+              您的浏览器不支持 HTML5 视频播放。
+              <a :href="videoStreamUrl">下载视频</a>
+            </video>
           </div>
-          <div class="flex items-center gap-2 text-xs">
-            <span class="text-gray-500 dark:text-gray-400">当前</span>
-            <span class="font-mono bg-gray-100 dark:bg-gray-800/50 px-2 py-0.5 rounded">
-              {{ Math.round(playbackStore.currentWPM) }} WPM
+        </div>
+
+        <!-- 控制区域 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg mb-4">
+          <!-- 智能调速控制 -->
+          <div class="flex items-center gap-3 mb-4">
+            <!-- 智能调速开关 -->
+            <div class="relative flex items-center">
+              <label class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  v-model="playbackStore.isAutoSpeedEnabled"
+                  class="form-checkbox h-4 w-4 rounded border-gray-300 text-primary-light focus:ring-primary-light/20"
+                >
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">智能调速</span>
+              </label>
+              
+              <!-- 提示图标移到右下角 -->
+              <div class="relative" style="margin: 0 0 -4px 2px">
+                <button
+                  type="button"
+                  class="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 transition-colors inline-flex items-center"
+                  @mouseenter="showTooltip = true"
+                  @mouseleave="showTooltip = false"
+                >
+                  <QuestionMarkCircleIcon class="h-3.5 w-3.5" />
+                </button>
+                
+                <!-- 工具提示 -->
+                <div
+                  v-if="showTooltip"
+                  class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-gray-900/90 backdrop-blur-sm text-white rounded-lg shadow-lg z-50 text-xs"
+                >
+                  <div class="text-gray-200">
+                    <p>通过分析音频特征，自动调整播放速度以匹配您设定的目标语速</p>
+                  </div>
+                  <!-- 小三角形 -->
+                  <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900/90 rotate-45"></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- WPM 设置和显示 -->
+            <div v-if="playbackStore.isAutoSpeedEnabled" class="flex items-center gap-4">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">目标语速</span>
+                <input
+                  type="number"
+                  v-model="playbackStore.userPreferences.targetWPM"
+                  class="w-16 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded-md focus:ring-1 focus:ring-primary-light/30 focus:border-primary-light dark:bg-gray-800 dark:text-gray-300"
+                  min="80"
+                  max="300"
+                  step="10"
+                  @change="playbackStore.savePreferences()"
+                >
+                <span class="text-xs text-gray-400 dark:text-gray-500">WPM</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-gray-500 dark:text-gray-400">当前</span>
+                <span class="font-mono bg-gray-100 dark:bg-gray-800/50 px-2 py-0.5 rounded">
+                  {{ Math.round(playbackStore.currentWPM) }} WPM
+                </span>
+                <span class="text-gray-300 dark:text-gray-600">•</span>
+                <span class="font-mono bg-gray-100 dark:bg-gray-800/50 px-2 py-0.5 rounded">
+                  {{ currentSpeed.toFixed(2) }}x
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 标记和笔记按钮 -->
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              @click="handleAddMark"
+              class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors shrink-0"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+              <span class="whitespace-nowrap">添加标记</span>
+            </button>
+
+            <button
+              @click="handleAddNote"
+              class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors shrink-0"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span class="whitespace-nowrap">添加笔记</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 视频信息 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            {{ video?.title }}
+          </h1>
+          
+          <!-- 元信息 -->
+          <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <span class="flex items-center">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {{ formatDate(video?.createdAt) }}
             </span>
-            <span class="text-gray-300 dark:text-gray-600">•</span>
-            <span class="font-mono bg-gray-100 dark:bg-gray-800/50 px-2 py-0.5 rounded">
-              {{ currentSpeed.toFixed(2) }}x
+            <span class="mx-2">•</span>
+            <span class="flex items-center">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              {{ formatFileSize(video?.fileSize || 0) }}
             </span>
           </div>
+
+          <!-- 视频描述 -->
+          <p class="text-gray-600 dark:text-gray-300 whitespace-pre-line">
+            {{ video?.description }}
+          </p>
         </div>
       </div>
 
-      <!-- 视频信息 -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          {{ video?.title }}
-        </h1>
-        
-        <!-- 元信息 -->
-        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <span class="flex items-center">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {{ formatDate(video?.createdAt) }}
-          </span>
-          <span class="mx-2">•</span>
-          <span class="flex items-center">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            {{ formatFileSize(video?.fileSize || 0) }}
-          </span>
+      <!-- 右侧侧边栏 -->
+      <div 
+        class="fixed right-0 top-0 h-screen w-80 transform transition-transform duration-300 ease-in-out z-20"
+        :class="[
+          sidebarOpen ? 'translate-x-0' : 'translate-x-full',
+          'lg:relative lg:transform-none lg:transition-none'
+        ]"
+      >
+        <!-- 侧边栏切换按钮 -->
+        <button
+          @click="toggleSidebar"
+          class="absolute -left-10 top-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 p-2 rounded-l-lg shadow-lg lg:hidden"
+        >
+          <svg 
+            class="w-6 h-6 text-gray-600 dark:text-gray-300 transform transition-transform"
+            :class="sidebarOpen ? 'rotate-180' : ''"
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <!-- 侧边栏内容 -->
+        <div class="h-full bg-white dark:bg-gray-800 shadow-lg overflow-hidden rounded-xl">
+          <!-- 标签页头部 -->
+          <div class="bg-white dark:bg-gray-800 rounded-t-xl">
+            <nav class="flex">
+              <button
+                v-for="tab in ['marks', 'notes']"
+                :key="tab"
+                @click="activeTab = tab"
+                :class="[
+                  'flex-1 px-4 py-3 text-sm font-medium text-center border-b-2 transition-colors',
+                  activeTab === tab
+                    ? 'border-primary-light text-primary-light'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                ]"
+              >
+                {{ tab === 'marks' ? '标记' : '笔记' }}
+              </button>
+            </nav>
+          </div>
+
+          <!-- 内容区域 -->
+          <div class="p-4 overflow-y-auto h-full custom-scrollbar">
+            <component
+              :is="activeTab === 'marks' ? MarkList : NoteList"
+              :marks="marksStore.marks"
+              :notes="notesStore.notes"
+              @select="seekToTime"
+              @add-annotation="handleAddAnnotation"
+            />
+          </div>
         </div>
-
-        <!-- 视频描述 -->
-        <p class="text-gray-600 dark:text-gray-300 whitespace-pre-line">
-          {{ video?.description }}
-        </p>
       </div>
-
-      <!-- 可以添加一个提示，显示继续播放的位置 暂时不要 -->
-      <!-- <div v-if="video && historyStore.getVideoProgress(video.id) > 0" 
-        class="mb-4 p-4 bg-primary-light/10 rounded-lg text-gray-700 dark:text-gray-300">
-        从上次观看的位置继续播放
-      </div> -->
     </div>
 
     <!-- 将对话框移到最外层 -->
@@ -277,6 +361,10 @@ import {
   TransitionRoot,
   TransitionChild,
 } from '@headlessui/vue'
+import MarkList from '@/components/marks/MarkList.vue'
+import NoteList from '@/components/marks/NoteList.vue'
+import { useMarksStore } from '@/stores/marks'
+import { useNotesStore } from '@/stores/notes'
 
 const route = useRoute()
 const videoPlayer = ref<HTMLVideoElement | null>(null)
@@ -312,6 +400,12 @@ const isPlaying = ref(false)
 
 // 添加提示状态
 const showTooltip = ref(false)
+
+// 添加新的 refs 和 stores
+const sidebarOpen = ref(true)
+const activeTab = ref('marks')
+const marksStore = useMarksStore()
+const notesStore = useNotesStore()
 
 // 检查播放器是否可用
 const isPlayerReady = (p: Plyr | null): p is Plyr => {
@@ -516,12 +610,88 @@ const handleSaveSettings = () => {
   showSpeedSettings.value = false
 }
 
-onMounted(() => {
+// 添加新的方法
+const toggleSidebar = () => {
+  sidebarOpen.value = !sidebarOpen.value
+}
+
+const handleAddMark = async () => {
+  if (!videoPlayer.value || !video.value) return
+  
+  const timestamp = videoPlayer.value.currentTime
+  await marksStore.addMark({
+    videoId: video.value.id,
+    userId: 'test_user_id', // 应该从用户状态获取
+    timestamp,
+    content: '在 ' + formatTime(timestamp) + ' 添加的标记'
+  })
+}
+
+const handleAddNote = async () => {
+  if (!videoPlayer.value || !video.value) return
+  
+  const timestamp = videoPlayer.value.currentTime
+  await notesStore.addNote({
+    videoId: video.value.id,
+    userId: 'test_user_id', // 应该从用户状态获取
+    timestamp,
+    content: '在 ' + formatTime(timestamp) + ' 添加的笔记'
+  })
+}
+
+const handleAddAnnotation = async (markId: string, content: string) => {
+  await marksStore.addAnnotation(markId, content)
+}
+
+const seekToTime = (timestamp: number) => {
+  if (videoPlayer.value) {
+    videoPlayer.value.currentTime = timestamp
+  }
+}
+
+// 修改 onMounted 中的数据加载
+onMounted(async () => {
   historyStore.loadHistory()
   playbackStore.loadPreferences()
-  loadVideo()
+  await loadVideo()
+  
+  // 等待视频数据加载完成后再加载标记和笔记
+  if (video.value) {
+    await Promise.all([
+      marksStore.fetchMarks('test_user_id', video.value.id),
+      notesStore.fetchNotes('test_user_id', video.value.id)
+    ])
+  }
+
+  // 在小屏幕下默认收起侧边栏
+  if (window.innerWidth < 1024) {
+    sidebarOpen.value = false
+  }
 })
 
+// 监听路由变化重新加载数据
+watch(() => route.params.id, async (newId) => {
+  if (newId) {
+    await loadVideo()
+    if (video.value) {
+      await Promise.all([
+        marksStore.fetchMarks('test_user_id', video.value.id),
+        notesStore.fetchNotes('test_user_id', video.value.id)
+      ])
+    }
+  }
+})
+
+// 监听窗口大小变化
+onMounted(() => {
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 1024) {
+      sidebarOpen.value = true
+    }
+  })
+})
+
+// 清理事件监听
 onUnmounted(() => {
   if (videoPlayer.value) {
     videoPlayer.value.removeEventListener('error', handleVideoError)
@@ -536,6 +706,7 @@ onUnmounted(() => {
   if (audioContext.value) {
     audioContext.value.close()
   }
+  window.removeEventListener('resize', () => {})
 })
 
 // 监听智能调速开关
@@ -554,6 +725,13 @@ watch(() => playbackStore.isAutoSpeedEnabled, (enabled) => {
     }
   }
 })
+
+// 添加格式化时间的工具函数
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 </script>
 
 <style>
@@ -577,6 +755,35 @@ watch(() => playbackStore.isAutoSpeedEnabled, (enabled) => {
 /* 视频元素样式 */
 video {
   @apply w-full h-full object-contain;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.5);
+}
+
+/* 添加响应式样式 */
+@media (max-width: 1024px) {
+  .container {
+    padding-right: 1rem;
+  }
 }
 </style>
 

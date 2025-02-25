@@ -102,4 +102,71 @@ export const videoApi = {
   }) {
     return apiClient.post(API_ENDPOINTS.VIDEO_BATCH, data)
   },
+
+  // 标记相关
+  getMarks(userId: string, videoId: string) {
+    return apiClient.get(API_ENDPOINTS.MARKS(userId, videoId))
+  },
+
+  addMark(userId: string, videoId: string, markData: {
+    timestamp: number
+    content: string
+  }) {
+    return apiClient.post(API_ENDPOINTS.MARKS(userId, videoId), markData)
+  },
+
+  addAnnotation(markId: string, data: { content: string }) {
+    return apiClient.post(API_ENDPOINTS.MARK_ANNOTATIONS(markId), data)
+  },
+
+  deleteMark(markId: string) {
+    return apiClient.delete(API_ENDPOINTS.MARK_DELETE(markId))
+  },
+
+  deleteAnnotation(markId: string, annotationId: string) {
+    return apiClient.delete(API_ENDPOINTS.MARK_ANNOTATION_DELETE(markId, annotationId))
+  },
+
+  // 笔记相关
+  getNotes(userId: string, videoId: string) {
+    return apiClient.get(API_ENDPOINTS.NOTES(userId, videoId))
+  },
+
+  addNote(userId: string, videoId: string, noteData: {
+    timestamp: number
+    content: string
+  }) {
+    return apiClient.post(API_ENDPOINTS.NOTES(userId, videoId), noteData)
+  },
+
+  deleteNote(noteId: string) {
+    return apiClient.delete(API_ENDPOINTS.NOTE_DELETE(noteId))
+  }
+}
+
+// 在文件顶部添加接口导出
+export interface Mark {
+  id: string
+  userId: string
+  videoId: string
+  timestamp: number
+  content: string
+  annotations?: Annotation[]
+  createdAt: string
+}
+
+export interface Annotation {
+  id: string
+  markId: string
+  content: string
+  createdAt: string
+}
+
+export interface Note {
+  id: string
+  userId: string
+  videoId: string
+  timestamp: number
+  content: string
+  createdAt: string
 } 

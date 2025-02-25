@@ -1,6 +1,6 @@
 // API 基础配置
-export const API_BASE_URL = 'https://ajkosjntzbkc.sealosgzg.site/api/v1'
-export const ASSETS_BASE_URL = 'https://ajkosjntzbkc.sealosgzg.site' // 用于静态资源
+export const API_BASE_URL = 'https://jpsdepeduffc.sealosgzg.site/api/v1'
+export const ASSETS_BASE_URL = 'https://jpsdepeduffc.sealosgzg.site' // 用于静态资源
 
 // API 端点
 export const API_ENDPOINTS = {
@@ -11,6 +11,13 @@ export const API_ENDPOINTS = {
   VIDEO_DELETE: (id: string) => `/videos/${id}`,
   VIDEO_BATCH: '/videos/batch',
   VIDEO_STATS: (id: string) => `/videos/${id}/stats`,
+  MARKS: (userId: string, videoId: string) => `/marks/${userId}/${videoId}`,
+  MARK_ANNOTATIONS: (markId: string) => `/marks/${markId}/annotations`,
+  MARK_DELETE: (markId: string) => `/marks/${markId}`,
+  MARK_ANNOTATION_DELETE: (markId: string, annotationId: string) => 
+    `/marks/${markId}/annotations/${annotationId}`,
+  NOTES: (userId: string, videoId: string) => `/notes/${userId}/${videoId}`,
+  NOTE_DELETE: (noteId: string) => `/notes/${noteId}`,
 } as const
 
 // API 配置
