@@ -14,7 +14,13 @@ export const useMarksStore = defineStore('marks', () => {
       currentUserId.value = userId
       const { data } = await videoApi.getMarks(userId, videoId)
       if (data.code === 0) {
-        marks.value = data.data
+        marks.value = data.data.map((mark: Mark) => ({
+          ...mark,
+          annotations: mark.annotations || [], // 确保 annotations 始终是数组
+          // 如果时间是默认值，使用当前时间
+          createdAt: mark.createdAt === "0001-01-01T00:00:00Z" ? new Date().toISOString() : mark.createdAt,
+          updatedAt: mark.updatedAt === "0001-01-01T00:00:00Z" ? new Date().toISOString() : mark.updatedAt
+        }))
       } else {
         message.error(data.msg || '获取标记失败')
       }

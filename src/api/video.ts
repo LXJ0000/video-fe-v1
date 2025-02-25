@@ -189,8 +189,9 @@ export interface Mark {
   videoId: string
   timestamp: number
   content: string
-  annotations?: Annotation[]
+  annotations: Annotation[] | null
   createdAt: string
+  updatedAt: string // 添加 updatedAt 字段
 }
 
 export interface Annotation {

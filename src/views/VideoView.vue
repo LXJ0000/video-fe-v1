@@ -94,9 +94,13 @@
                 </div>
               </div>
             </div>
-            
-            <!-- WPM 设置和显示 -->
-            <div v-if="playbackStore.isAutoSpeedEnabled" class="flex items-center gap-4">
+          </div>
+
+          <!-- 智能调速区域 -->
+          <div v-if="playbackStore.isAutoSpeedEnabled" class="space-y-3">
+            <!-- 语速设置和显示 -->
+            <div class="flex items-center gap-4 flex-wrap">
+              <!-- 目标语速设置 -->
               <div class="flex items-center gap-2">
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">目标语速</span>
                 <input
@@ -110,6 +114,11 @@
                 >
                 <span class="text-xs text-gray-400 dark:text-gray-500">WPM</span>
               </div>
+
+              <!-- 分隔符 -->
+              <div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
+
+              <!-- 当前语速显示 -->
               <div class="flex items-center gap-2 text-xs">
                 <span class="text-gray-500 dark:text-gray-400">当前</span>
                 <span class="font-mono bg-gray-100 dark:bg-gray-800/50 px-2 py-0.5 rounded">
@@ -180,10 +189,10 @@
 
       <!-- 右侧侧边栏 -->
       <div 
-        class="fixed right-0 top-0 h-screen w-80 transform transition-transform duration-300 ease-in-out z-20"
+        class="fixed right-0 top-16 h-[calc(100vh-4rem)] w-80 transform transition-transform duration-300 ease-in-out z-20"
         :class="[
           sidebarOpen ? 'translate-x-0' : 'translate-x-full',
-          'lg:relative lg:transform-none lg:transition-none'
+          'lg:relative lg:transform-none lg:transition-none lg:top-0 lg:h-full'
         ]"
       >
         <!-- 侧边栏切换按钮 -->
@@ -381,6 +390,7 @@ import MarkList from '@/components/marks/MarkList.vue'
 import NoteList from '@/components/marks/NoteList.vue'
 import { useMarksStore } from '@/stores/marks'
 import { useNotesStore } from '@/stores/notes'
+import {message} from '@/utils/message'
 
 const route = useRoute()
 const videoPlayer = ref<HTMLVideoElement | null>(null)
@@ -636,30 +646,44 @@ const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value
 }
 
+// 修改添加标记方法
 const handleAddMark = async () => {
-  console.log('handleAddMark')
-  if (!videoPlayer.value || !video.value) return
+  if (!videoPlayer.value || !video.value) {
+    message.error('视频未准备就绪')
+    return
+  }
   
-  const timestamp = videoPlayer.value.currentTime
-  await marksStore.addMark({
-    videoId: video.value.id,
-    userId: 'test_user_id', // 应该从用户状态获取
-    timestamp,
-    content: '在 ' + formatTime(timestamp) + ' 添加的标记'
-  })
+  try {
+    const timestamp = videoPlayer.value.currentTime
+    await marksStore.addMark({
+      videoId: video.value.id,
+      userId: currentUserId.value,
+      timestamp,
+      content: `在 ${formatTime(timestamp)} 添加的标记`
+    })
+  } catch (error) {
+    console.error('Failed to add mark:', error)
+  }
 }
 
+// 修改添加笔记方法
 const handleAddNote = async () => {
-  console.log('handleAddNote')
-  if (!videoPlayer.value || !video.value) return
+  if (!videoPlayer.value || !video.value) {
+    message.error('视频未准备就绪')
+    return
+  }
   
-  const timestamp = videoPlayer.value.currentTime
-  await notesStore.addNote({
-    videoId: video.value.id,
-    userId: 'test_user_id', // 应该从用户状态获取
-    timestamp,
-    content: '在 ' + formatTime(timestamp) + ' 添加的笔记'
-  })
+  try {
+    const timestamp = videoPlayer.value.currentTime
+    await notesStore.addNote({
+      videoId: video.value.id,
+      userId: currentUserId.value,
+      timestamp,
+      content: `在 ${formatTime(timestamp)} 添加的笔记`
+    })
+  } catch (error) {
+    console.error('Failed to add note:', error)
+  }
 }
 
 const handleAddAnnotation = async (markId: string, content: string) => {
@@ -669,6 +693,10 @@ const handleAddAnnotation = async (markId: string, content: string) => {
 const seekToTime = (timestamp: number) => {
   if (videoPlayer.value) {
     videoPlayer.value.currentTime = timestamp
+    // 在小屏幕下自动收起侧边栏
+    if (window.innerWidth < 1024) {
+      sidebarOpen.value = false
+    }
   }
 }
 

@@ -197,7 +197,7 @@
                           <button
                             type="button"
                             class="px-4 py-2 bg-primary-light text-white text-sm rounded-full hover:bg-primary transition-colors duration-200"
-                            @click="$refs.coverInput.click()"
+                            @click="coverInput?.click()"
                           >
                             选择图片
                           </button>
@@ -293,7 +293,7 @@ const isDragging = ref(false)
 const selectedFile = ref<File | null>(null)
 const title = ref('')
 const description = ref('')
-const coverInput = ref<HTMLInputElement>()
+const coverInput = ref<HTMLInputElement | null>(null)
 const coverFile = ref<File | null>(null)
 const coverPreview = ref<string>('')
 const coverType = ref<'default' | 'custom'>('default')

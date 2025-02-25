@@ -42,10 +42,15 @@
             <!-- 视频管理入口 -->
             <router-link
               to="/manage"
-              class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-primary-dark dark:hover:text-primary-light transition-colors duration-300"
+              class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-primary-dark dark:hover:text-primary-light transition-colors duration-300 pr-0"
             >
-              <FolderIcon class="w-5 h-5 mr-2" />
-              视频管理
+              <FolderIcon 
+              :class="[
+                'w-5 h-5',
+                'sm:mr-2'
+              ]" 
+              />
+              <span class="hidden sm:inline">视频管理</span> <!-- 在小屏幕上隐藏文字 -->
             </router-link>
 
             <!-- 上传按钮 -->
@@ -53,8 +58,13 @@
               @click="showUploadDialog = true"
               class="flex items-center px-4 py-2 bg-gradient-to-r from-primary-light to-primary-dark text-white rounded-full hover:shadow-lg transition-all duration-300"
             >
-              <PlusIcon class="w-5 h-5 mr-2" />
-              上传视频
+              <PlusIcon 
+              :class="[
+                'w-5 h-5',
+                'sm:mr-2'
+              ]" 
+              />
+              <span class="hidden sm:inline">上传视频</span> <!-- 在小屏幕上隐藏文字 -->
             </button>
 
             <!-- 主题切换 -->
@@ -107,28 +117,11 @@ const searchResults = ref([])
 const handleUploadSuccess = async () => {
   showUploadDialog.value = false
   
-  // 获取当前路由名称
-  const currentRoute = router.currentRoute.value.name
-
-  // 根据当前页面刷新视频列表
-  if (currentRoute === 'manage') {
-    // 如果在管理页面，调用管理页面的刷新方法
-    const manageView = document.querySelector('.video-manage-view')
-    if (manageView && manageView.__vue__) {
-      await manageView.__vue__.loadVideos()
-    } else {
-      // 如果无法获取组件实例，则重新加载整个视频列表
-      await videoStore.fetchVideos(1, 12)
-    }
-  } else if (currentRoute === 'home') {
-    // 如果在首页，刷新首页视频列表
-    const homeView = document.querySelector('.home-view')
-    if (homeView && homeView.__vue__) {
-      await homeView.__vue__.loadVideos()
-    } else {
-      await videoStore.fetchVideos(1, 12)
-    }
-  }
+  // 直接刷新视频列表，不再尝试访问组件实例
+  await videoStore.fetchVideos(1, 12)
+  
+  // 发出全局事件通知组件更新
+  window.dispatchEvent(new CustomEvent('video-uploaded'))
 }
 
 // 简单的搜索实现
