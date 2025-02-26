@@ -39,19 +39,67 @@
 
           <!-- 右侧按钮组 -->
           <div class="flex items-center space-x-4">
-            <!-- 视频管理入口 -->
-            <router-link
-              to="/manage"
-              class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-primary-dark dark:hover:text-primary-light transition-colors duration-300 pr-0"
-            >
-              <FolderIcon 
-              :class="[
-                'w-5 h-5',
-                'sm:mr-2'
-              ]" 
-              />
-              <span class="hidden sm:inline">视频管理</span> <!-- 在小屏幕上隐藏文字 -->
-            </router-link>
+            <!-- 未登录状态 -->
+            <template v-if="!userStore.isAuthenticated">
+              <router-link
+                to="/login"
+                class="text-gray-700 dark:text-gray-300 hover:text-primary-dark dark:hover:text-primary-light transition-colors duration-300"
+              >
+                登录
+              </router-link>
+              <router-link
+                to="/register"
+                class="px-4 py-2 bg-gradient-to-r from-primary-light to-primary-dark text-white rounded-full hover:shadow-lg transition-all duration-300"
+              >
+                注册
+              </router-link>
+            </template>
+
+            <!-- 已登录状态 -->
+            <template v-else>
+              <!-- 用户菜单 -->
+              <Menu as="div" class="relative ml-3">
+                <MenuButton class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-primary-dark dark:hover:text-primary-light">
+                  <span>{{ userStore.currentUser?.username }}</span>
+                  <ChevronDownIcon class="w-4 h-4" />
+                </MenuButton>
+
+                <transition
+                  enter-active-class="transition ease-out duration-100"
+                  enter-from-class="opacity-0 scale-95"
+                  enter-to-class="opacity-100 scale-100"
+                  leave-active-class="transition ease-in duration-75"
+                  leave-from-class="opacity-100 scale-100"
+                  leave-to-class="opacity-0 scale-95"
+                >
+                  <MenuItems class="absolute right-0 mt-2 w-48 rounded-lg bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <MenuItem v-slot="{ active }">
+                      <router-link
+                        to="/manage"
+                        :class="[
+                          active ? 'bg-gray-100 dark:bg-gray-700' : '',
+                          'block px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
+                        ]"
+                      >
+                        视频管理
+                      </router-link>
+                    </MenuItem>
+                    <MenuItem v-slot="{ active }">
+                      <a
+                        href="#"
+                        @click.prevent="handleLogout"
+                        :class="[
+                          active ? 'bg-gray-100 dark:bg-gray-700' : '',
+                          'block px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
+                        ]"
+                      >
+                        退出登录
+                      </a>
+                    </MenuItem>
+                  </MenuItems>
+                </transition>
+              </Menu>
+            </template>
 
             <!-- 上传按钮 -->
             <button
@@ -99,17 +147,21 @@ import { ref, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVideoStore } from '../stores/video'
 import { useThemeStore } from '../stores/theme'
+import { useUserStore } from '../stores/user'
 import {
   PlusIcon,
   SunIcon,
   MoonIcon,
-  FolderIcon
+  FolderIcon,
+  ChevronDownIcon
 } from '@heroicons/vue/24/outline'
 import UploadDialog from '../components/UploadDialog.vue'
+import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 
 const router = useRouter()
 const videoStore = useVideoStore()
 const themeStore = useThemeStore()
+const userStore = useUserStore()
 const showUploadDialog = ref(false)
 const searchQuery = ref('')
 const searchResults = ref([])
@@ -136,5 +188,9 @@ const handleSearch = () => {
     video.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
     video.description.toLowerCase().includes(searchQuery.value.toLowerCase())
   ).slice(0, 5) // 最多显示5条结果
+}
+
+const handleLogout = () => {
+  userStore.logout()
 }
 </script> 

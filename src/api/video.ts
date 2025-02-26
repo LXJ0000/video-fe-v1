@@ -1,49 +1,9 @@
-import axios from 'axios'
-import { API_BASE_URL, API_ENDPOINTS } from './config'
-import type { VideoStatus, VideoListParams } from '../types/video'
-
-// 创建 axios 实例
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000,
-  // 移除自定义请求头，使用默认配置
-  // headers: {
-  //   'Cache-Control': 'no-cache',
-  //   'Pragma': 'no-cache',
-  //   'Expires': '0',
-  // }
-})
-
-// 添加请求拦截器处理错误
-apiClient.interceptors.request.use(
-  config => config,
-  error => {
-    console.error('Request error:', error)
-    return Promise.reject(error)
-  }
-)
-
-// 添加响应拦截器统一处理错误
-apiClient.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response) {
-      // 服务器返回错误状态码
-      console.error('Response error:', error.response.data)
-    } else if (error.request) {
-      // 请求发出但没有收到响应
-      console.error('No response received:', error.request)
-    } else {
-      // 请求配置出错
-      console.error('Request config error:', error.message)
-    }
-    return Promise.reject(error)
-  }
-)
+import { API_BASE_URL, API_ENDPOINTS, ApiResponse, privateApiClient, publicApiClient } from './config'
+import type { VideoStatus, VideoListParams, VideoItem } from '../types/video'
 
 // 视频相关 API
 export const videoApi = {
-  // 获取视频列表
+  // 获取视频列表 (需要认证)
   getVideos(params: {
     page?: number
     pageSize?: number
@@ -51,13 +11,12 @@ export const videoApi = {
     sortOrder?: 'asc' | 'desc'
     keyword?: string
   }) {
-    return apiClient.get(API_ENDPOINTS.VIDEOS, { params })
+    return privateApiClient.get(API_ENDPOINTS.VIDEOS, { params })
   },
 
-  // 上传视频
+  // 上传视频 (需要认证)
   uploadVideo(formData: FormData, onUploadProgress?: (progressEvent: any) => void) {
-    // 确保 FormData 中包含 duration 字段
-    return apiClient.post(API_ENDPOINTS.VIDEOS, formData, {
+    return privateApiClient.post(API_ENDPOINTS.VIDEOS, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -65,16 +24,23 @@ export const videoApi = {
     })
   },
 
-  // 获取视频详情
+  // 获取视频详情 (公开)
   getVideoDetail(id: string) {
-    return apiClient.get(API_ENDPOINTS.VIDEO_DETAIL(id))
+    return privateApiClient.get(API_ENDPOINTS.VIDEO_DETAIL(id))
   },
 
   // 获取视频流地址
   getVideoStreamUrl(id: string) {
+    // 获取 token
+    const token = localStorage.getItem('token')
+    
     // 使用 URL 对象处理参数
     const url = new URL(`${API_BASE_URL}${API_ENDPOINTS.VIDEO_STREAM(id)}`)
     url.searchParams.set('t', Date.now().toString())
+    // 添加 token 到 URL
+    if (token) {
+      url.searchParams.set('token', token)
+    }
     return url.toString()
   },
 
@@ -86,12 +52,12 @@ export const videoApi = {
     tags?: string[]
     duration?: number  // 添加时长字段
   }) {
-    return apiClient.put(API_ENDPOINTS.VIDEO_UPDATE(id), data)
+    return privateApiClient.put(API_ENDPOINTS.VIDEO_UPDATE(id), data)
   },
 
   // 删除视频
   deleteVideo(id: string) {
-    return apiClient.delete(API_ENDPOINTS.VIDEO_DELETE(id))
+    return privateApiClient.delete(API_ENDPOINTS.VIDEO_DELETE(id))
   },
 
   // 批量操作
@@ -100,85 +66,101 @@ export const videoApi = {
     action: 'delete' | 'update_status'
     status?: string
   }) {
-    return apiClient.post(API_ENDPOINTS.VIDEO_BATCH, data)
+    return privateApiClient.post(API_ENDPOINTS.VIDEO_BATCH, data)
   },
 
   // 标记相关
-  getMarks(userId: string, videoId: string) {
-    return apiClient.get(API_ENDPOINTS.MARKS(userId, videoId))
-  },
-
-  addMark(userId: string, videoId: string, markData: {
-    timestamp: number
-    content: string
-  }) {
-    return apiClient.post(API_ENDPOINTS.MARKS(userId, videoId), {
-      videoId,
-      ...markData
+  getMarks(videoId: string) {
+    return privateApiClient.get(API_ENDPOINTS.MARKS, { 
+      params: { videoId } 
     })
   },
 
-  updateMark(userId: string, videoId: string, markId: string, data: {
-    content: string
+  addMark(data: {
+    videoId: string
     timestamp: number
+    content: string
   }) {
-    return apiClient.put(API_ENDPOINTS.MARK_UPDATE(userId, videoId, markId), data)
+    return privateApiClient.post(API_ENDPOINTS.MARKS, data)
   },
 
-  deleteMark(userId: string, videoId: string, markId: string) {
-    return apiClient.delete(API_ENDPOINTS.MARK_DELETE(userId, videoId, markId))
+  updateMark(markId: string, data: {
+    content: string
+  }) {
+    return privateApiClient.put(API_ENDPOINTS.MARK_UPDATE(markId), data)
+  },
+
+  deleteMark(markId: string) {
+    return privateApiClient.delete(API_ENDPOINTS.MARK_DELETE(markId))
   },
 
   // 注释相关
-  getAnnotations(userId: string, videoId: string, markId: string) {
-    return apiClient.get(API_ENDPOINTS.MARK_ANNOTATIONS(userId, videoId, markId))
+  getAnnotations(markId: string) {
+    return privateApiClient.get(API_ENDPOINTS.MARK_ANNOTATIONS(markId))
   },
 
-  addAnnotation(userId: string, videoId: string, markId: string, data: {
+  addAnnotation(markId: string, data: {
     content: string
   }) {
-    return apiClient.post(API_ENDPOINTS.MARK_ANNOTATIONS(userId, videoId, markId), data)
+    return privateApiClient.post(API_ENDPOINTS.MARK_ANNOTATIONS(markId), data)
   },
 
-  updateAnnotation(userId: string, videoId: string, annotationId: string, data: {
+  updateAnnotation(annotationId: string, data: {
     content: string
   }) {
-    return apiClient.put(API_ENDPOINTS.MARK_ANNOTATION_UPDATE(userId, videoId, annotationId), data)
+    return privateApiClient.put(API_ENDPOINTS.MARK_ANNOTATION_UPDATE(annotationId), data)
   },
 
-  deleteAnnotation(userId: string, videoId: string, annotationId: string) {
-    return apiClient.delete(API_ENDPOINTS.MARK_ANNOTATION_DELETE(userId, videoId, annotationId))
+  deleteAnnotation(annotationId: string) {
+    return privateApiClient.delete(API_ENDPOINTS.MARK_ANNOTATION_DELETE(annotationId))
   },
 
   // 笔记相关
-  getNotes(userId: string, videoId: string) {
-    return apiClient.get(API_ENDPOINTS.NOTES(userId, videoId))
-  },
-
-  addNote(userId: string, videoId: string, noteData: {
-    timestamp: number
-    content: string
-  }) {
-    return apiClient.post(API_ENDPOINTS.NOTES(userId, videoId), {
-      videoId,
-      ...noteData
+  getNotes(videoId: string) {
+    return privateApiClient.get(API_ENDPOINTS.NOTES, { 
+      params: { videoId } 
     })
   },
 
-  updateNote(userId: string, videoId: string, noteId: string, data: {
-    content: string
+  addNote(data: {
+    videoId: string
     timestamp: number
+    content: string
   }) {
-    return apiClient.put(API_ENDPOINTS.NOTE_UPDATE(userId, videoId, noteId), data)
+    return privateApiClient.post(API_ENDPOINTS.NOTES, data)
   },
 
-  deleteNote(userId: string, videoId: string, noteId: string) {
-    return apiClient.delete(API_ENDPOINTS.NOTE_DELETE(userId, videoId, noteId))
+  updateNote(noteId: string, data: {
+    content: string
+  }) {
+    return privateApiClient.put(API_ENDPOINTS.NOTE_UPDATE(noteId), data)
+  },
+
+  deleteNote(noteId: string) {
+    return privateApiClient.delete(API_ENDPOINTS.NOTE_DELETE(noteId))
   },
 
   // 导出功能
-  exportData(userId: string, videoId: string) {
-    return apiClient.get<ExportData>(API_ENDPOINTS.EXPORT(userId, videoId))
+  exportData(videoId: string) {
+    return privateApiClient.get(API_ENDPOINTS.EXPORT, {
+      params: { videoId }
+    })
+  },
+
+  // 获取公开视频列表 (公开)
+  getPublicVideos(params: {
+    page?: number
+    pageSize?: number
+    userId?: string
+    sort?: string
+    keyword?: string
+  }) {
+    return publicApiClient.get<ApiResponse<{
+      total: number
+      page: number
+      pageSize: number
+      items: VideoItem[]
+    }>>(API_ENDPOINTS.VIDEOS_PUBLIC, { params })
   }
 }
 

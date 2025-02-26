@@ -145,7 +145,29 @@ VideoHub 是一个基于 Vue 3 的现代化视频分享平台，提供视频上�
 ## API 接口
 
 ### 视频接口
-1. 上传视频
+1. 获取公开视频列表
+   ```
+   GET /videos/public
+   ```
+   参数：
+   - `page`: 页码（从1开始，默认1）
+   - `pageSize`: 每页数量（默认10，最大50）
+   - `userId`: 用户ID（可选，指定后只返回该用户的公开视频）
+   - `sort`: 排序方式（可选，默认"-created_at"）
+     - created_at: 创建时间升序
+     - -created_at: 创建时间降序
+     - title: 标题升序
+     - -title: 标题降序
+   - `keyword`: 搜索关键词（可选，搜索标题和描述）
+
+2. 获取用户视频列表
+   ```
+   GET /videos/user
+   Authorization: Bearer <token>
+   ```
+   参数：同上
+
+3. 上传视频
    ```
    POST /videos
    Content-Type: multipart/form-data
@@ -153,27 +175,12 @@ VideoHub 是一个基于 Vue 3 的现代化视频分享平台，提供视频上�
    - 支持格式：MP4、MOV、AVI
    - 大小限制：1GB
 
-2. 获取视频列表
-   ```
-   GET /videos
-   ```
-   参数：
-   - `page`: 页码（默认1）
-   - `pageSize`: 每页数量（默认10，最大50）
-   - `keyword`: 关键词搜索
-   - `status`: 视频状态（public/private/draft）
-   - `startDate`: 开始日期（YYYY-MM-DD）
-   - `endDate`: 结束日期（YYYY-MM-DD）
-   - `tags`: 标签筛选，多个用逗号分隔
-   - `sortBy`: 排序字段（created_at/views/likes/file_size）
-   - `sortOrder`: 排序方向（asc/desc）
-
-3. 获取视频详情
+4. 获取视频详情
    ```
    GET /videos/:id
    ```
 
-4. 更新视频信息
+5. 更新视频信息
    ```
    PUT /videos/:id
    ```
@@ -183,12 +190,12 @@ VideoHub 是一个基于 Vue 3 的现代化视频分享平台，提供视频上�
    - `status`: 状态
    - `tags`: 标签数组
 
-5. 删除视频
+6. 删除视频
    ```
    DELETE /videos/:id
    ```
 
-6. 批量操作
+7. 批量操作
    ```
    POST /videos/batch
    ```

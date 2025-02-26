@@ -2,17 +2,21 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { videoApi, type Mark, type UpdateMarkParams, type UpdateAnnotationParams } from '@/api/video'
 import { message } from '@/utils/message'
+import { useUserStore } from './user'
 
 export const useMarksStore = defineStore('marks', () => {
-  const marks = ref<Mark[]>([])
+  const userStore = useUserStore()
   const currentVideoId = ref<string>('')
-  const currentUserId = ref('test_user_id') // 后续从用户状态获取
+  const marks = ref<Mark[]>([])
 
-  const fetchMarks = async (userId: string, videoId: string) => {
+  const fetchMarks = async (videoId: string) => {
     try {
+      if (!userStore.isAuthenticated) {
+        throw new Error('用户未登录')
+      }
+      
       currentVideoId.value = videoId
-      currentUserId.value = userId
-      const { data } = await videoApi.getMarks(userId, videoId)
+      const { data } = await videoApi.getMarks(videoId)
       if (data.code === 0) {
         marks.value = data.data.map((mark: Mark) => ({
           ...mark,
@@ -27,12 +31,12 @@ export const useMarksStore = defineStore('marks', () => {
     } catch (error) {
       message.error('获取标记失败')
       console.error('Failed to fetch marks:', error)
+      throw error
     }
   }
 
   const addMark = async (markData: {
     videoId: string
-    userId: string
     timestamp: number
     content: string
   }) => {
@@ -40,7 +44,7 @@ export const useMarksStore = defineStore('marks', () => {
       if (!marks.value) {
         marks.value = [] // 确保 marks 是数组
       }
-      const { data } = await videoApi.addMark(markData.userId, markData.videoId, markData)
+      const { data } = await videoApi.addMark(markData)
       if (data.code === 0) {
         marks.value.push(data.data)
         message.success('添加标记成功')
@@ -58,13 +62,7 @@ export const useMarksStore = defineStore('marks', () => {
     timestamp: number
   }) => {
     try {
-      const updateData: UpdateMarkParams = {
-        ...data,
-        id: markId,
-        userId: currentUserId.value,
-        videoId: currentVideoId.value
-      }
-      const response = await videoApi.updateMark(currentUserId.value, currentVideoId.value, markId, updateData)
+      const response = await videoApi.updateMark(markId, data)
       if (response.data.code === 0) {
         const index = marks.value.findIndex(m => m.id === markId)
         if (index !== -1) {
@@ -82,7 +80,7 @@ export const useMarksStore = defineStore('marks', () => {
 
   const addAnnotation = async (markId: string, content: string) => {
     try {
-      const response = await videoApi.addAnnotation(currentUserId.value, currentVideoId.value, markId, { content })
+      const response = await videoApi.addAnnotation(markId, { content })
       if (response.data.code === 0) {
         const mark = marks.value.find(m => m.id === markId)
         if (mark) {
@@ -101,13 +99,7 @@ export const useMarksStore = defineStore('marks', () => {
 
   const updateAnnotation = async (markId: string, annotationId: string, content: string) => {
     try {
-      const updateData: UpdateAnnotationParams = {
-        content,
-        id: annotationId,
-        userId: currentUserId.value,
-        markId: markId
-      }
-      const response = await videoApi.updateAnnotation(currentUserId.value, currentVideoId.value, annotationId, updateData)
+      const response = await videoApi.updateAnnotation(annotationId, { content })
       if (response.data.code === 0) {
         const mark = marks.value.find(m => m.id === markId)
         if (mark && mark.annotations) {
@@ -128,7 +120,7 @@ export const useMarksStore = defineStore('marks', () => {
 
   const deleteAnnotation = async (markId: string, annotationId: string) => {
     try {
-      const response = await videoApi.deleteAnnotation(currentUserId.value, currentVideoId.value, annotationId)
+      const response = await videoApi.deleteAnnotation(annotationId)
       if (response.data.code === 0) {
         const mark = marks.value.find(m => m.id === markId)
         if (mark && mark.annotations) {
@@ -146,7 +138,7 @@ export const useMarksStore = defineStore('marks', () => {
 
   const deleteMark = async (markId: string) => {
     try {
-      const response = await videoApi.deleteMark(currentUserId.value, currentVideoId.value, markId)
+      const response = await videoApi.deleteMark(markId)
       if (response.data.code === 0) {
         marks.value = marks.value.filter(m => m.id !== markId)
         message.success('删除标记成功')

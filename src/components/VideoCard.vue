@@ -50,7 +50,7 @@
           :class="[
             'px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap',
             {
-              'bg-green-500/70 text-white': video.status === 'ready',
+              'bg-green-500/70 text-white': video.status === 'public',
               'bg-gray-900/70 text-white': video.status === 'private',
               'bg-yellow-500/70 text-white': video.status === 'draft'
             }
@@ -160,7 +160,7 @@ const handleDeleteSuccess = () => {
 const handleToggleStatus = async () => {
   try {
     const videoStore = useVideoStore()
-    const newStatus = props.video.status === 'private' ? 'ready' : 'private'
+    const newStatus = props.video.status === 'private' ? 'public' : 'private'
     await videoStore.updateVideo(props.video.id, {
       ...props.video,
       status: newStatus
@@ -222,7 +222,7 @@ const formatDuration = (seconds: number) => {
 // 状态文本
 const statusText = computed(() => {
   switch (props.video.status) {
-    case 'ready':
+    case 'public':
       return '已发布'
     case 'private':
       return '私有'

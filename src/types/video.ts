@@ -1,5 +1,5 @@
 // 视频状态类型
-export type VideoStatus = 'ready' | 'private' | 'draft'
+export type VideoStatus = 'public' | 'private' | 'draft'
 
 // 视频状态筛选类型（包含空字符串表示全部）
 export type VideoStatusFilter = '' | VideoStatus

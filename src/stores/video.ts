@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { videoApi } from '../api/video'
 import type { VideoItem, VideoListParams, VideoListResponse, VideoStatus } from '../types/video'
+import { useUserStore } from './user'
 
 // 定义更新视频的参数类型
 interface UpdateVideoParams {
@@ -12,15 +13,30 @@ interface UpdateVideoParams {
 }
 
 export const useVideoStore = defineStore('video', () => {
+  const userStore = useUserStore()
   const isUploading = ref(false)
   const uploadProgress = ref(0)
-  const videos = ref<VideoItem[]>([])
+  
+  // 分离两种视频列表
+  const videos = ref<VideoItem[]>([]) // 用户视频（管理页面用）
+  const publicVideos = ref<VideoItem[]>([]) // 公开视频（首页用）
+  
+  const total = ref(0)
+  const publicTotal = ref(0)
+  const currentPage = ref(1)
+  const publicCurrentPage = ref(1)
+  const isLoading = ref(false)
+  const message = ref('')
 
   // 上传视频
   const uploadVideo = async (file: File, title: string, description: string, options?: {
     cover?: File
     duration?: number
   }) => {
+    if (!userStore.isAuthenticated) {
+      throw new Error('用户未登录')
+    }
+    
     const formData = new FormData()
     formData.append('file', file)
     formData.append('title', title)
@@ -53,9 +69,14 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  // 获取视频列表
+  // 获取用户视频列表（管理页面用）
   const fetchVideos = async (page = 1, pageSize = 12, params: Partial<VideoListParams> = {}) => {
     try {
+      if (!userStore.currentUser) {
+        throw new Error('用户未登录')
+      }
+      
+      isLoading.value = true
       const response = await videoApi.getVideos({
         page,
         pageSize,
@@ -72,10 +93,52 @@ export const useVideoStore = defineStore('video', () => {
         videos.value = [...videos.value, ...newVideos]
       }
       
+      total.value = response.data.data.total || 0
+      currentPage.value = page
+      
       return response.data
     } catch (error) {
       console.error('Fetch videos failed:', error)
       throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 获取公开视频列表（首页用）
+  const fetchPublicVideos = async (page = 1, pageSize = 12, options: {
+    userId?: string
+    sort?: string
+    keyword?: string
+  } = {}) => {
+    try {
+      isLoading.value = true
+      const { data } = await videoApi.getPublicVideos({
+        page,
+        pageSize,
+        ...options
+      })
+      
+      if (data.code === 0) {
+        // 使用单独的状态存储公开视频
+        if (page === 1) {
+          publicVideos.value = data.data.items || []
+        } else {
+          publicVideos.value = [...publicVideos.value, ...(data.data.items || [])]
+        }
+        
+        publicTotal.value = data.data.total || 0
+        publicCurrentPage.value = page
+      } else {
+        message.value = data.msg || '获取视频列表失败'
+      }
+      
+      return data
+    } catch (error) {
+      console.error('Failed to fetch public videos:', error)
+      message.value = '获取视频列表失败'
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -128,9 +191,17 @@ export const useVideoStore = defineStore('video', () => {
   return {
     isUploading,
     uploadProgress,
-    videos,
+    videos, // 用户视频
+    publicVideos, // 公开视频
+    total,
+    publicTotal,
+    currentPage,
+    publicCurrentPage,
+    isLoading,
+    message,
     uploadVideo,
     fetchVideos,
+    fetchPublicVideos,
     updateVideo,
     deleteVideo,
     batchUpdateVideos

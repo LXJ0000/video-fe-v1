@@ -27,9 +27,9 @@
     </div>
 
     <!-- 视频网格 -->
-    <div v-if="!isLoading && videoStore.videos.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div v-if="!isLoading && videoStore.publicVideos.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <router-link
-        v-for="video in videoStore.videos"
+        v-for="video in videoStore.publicVideos"
         :key="video.id"
         :to="`/video/${video.id}`"
         class="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
@@ -104,22 +104,26 @@
     </div>
 
     <!-- 空状态 -->
-    <div v-if="!isLoading && videoStore.videos.length === 0" class="flex flex-col items-center justify-center py-16">
+    <div v-if="!isLoading && videoStore.publicVideos.length === 0" class="flex flex-col items-center justify-center py-16">
       <div class="w-24 h-24 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
         <InboxIcon class="w-12 h-12 text-gray-400" />
       </div>
       <h3 class="text-lg font-medium text-gray-900 dark:text-white">暂无视频</h3>
-      <p class="mt-1 text-gray-500 dark:text-gray-400">点击右上角的"上传视频"添加新视频</p>
+      <p class="mt-1 text-gray-500 dark:text-gray-400">敬请期待更多精彩内容</p>
     </div>
 
-    <!-- 加载更多 -->
-    <div v-if="hasMore" class="mt-8 text-center">
+    <!-- 加载更多 - 只在有更多数据时显示 -->
+    <div v-if="hasMore && !isLoading && videoStore.publicVideos.length > 0" class="mt-8 text-center">
       <button
         @click="loadMore"
-        class="px-6 py-2 bg-white dark:bg-gray-800 text-primary-dark dark:text-primary-light border border-primary-light rounded-full hover:bg-primary-light hover:text-white transition-all duration-300"
+        class="px-6 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary-light/30"
         :disabled="isLoadingMore"
       >
-        {{ isLoadingMore ? '加载中...' : '加载更多' }}
+        <span v-if="isLoadingMore">
+          <span class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-primary-light border-t-transparent mr-2 align-middle"></span>
+          加载中...
+        </span>
+        <span v-else>加载更多</span>
       </button>
     </div>
   </div>
@@ -150,9 +154,10 @@ const loadVideos = async () => {
   try {
     isLoading.value = true
     error.value = ''
-    const response = await videoStore.fetchVideos(1, 12)
+    const response = await videoStore.fetchPublicVideos(1, 12)
     currentPage.value = 1
-    hasMore.value = response.data.total > videoStore.videos.length
+    // 检查是否有更多数据
+    hasMore.value = videoStore.publicTotal > videoStore.publicVideos.length
   } catch (err) {
     error.value = '加载视频失败，请稍后重试'
   } finally {
@@ -165,8 +170,9 @@ const loadMore = async () => {
   try {
     isLoadingMore.value = true
     currentPage.value++
-    const response = await videoStore.fetchVideos(currentPage.value, 12)
-    hasMore.value = response.data.total > videoStore.videos.length
+    const response = await videoStore.fetchPublicVideos(currentPage.value, 12)
+    // 检查是否有更多数据
+    hasMore.value = videoStore.publicTotal > videoStore.publicVideos.length
   } catch (err) {
     currentPage.value--
     error.value = '加载更多失败，请重试'
@@ -228,7 +234,8 @@ const formatDuration = (seconds: number) => {
 }
 
 onMounted(() => {
-  loadVideos()
+  // 使用公开视频接口获取视频列表
+  videoStore.fetchPublicVideos(1, 12)
 })
 
 // 暴露 loadVideos 方法给父组件

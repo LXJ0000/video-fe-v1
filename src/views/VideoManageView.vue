@@ -77,7 +77,7 @@
     </div>
 
     <!-- 视频列表 -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+    <div v-if="!isLoading && videoStore.videos.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <div
         v-for="video in videoStore.videos"
         :key="video.id"
@@ -119,7 +119,7 @@
     </div>
 
     <!-- 加载更多 -->
-    <div v-if="hasMore && !isLoading" class="mt-8 text-center">
+    <div v-if="hasMore && !isLoading && videoStore.videos.length > 0" class="mt-8 text-center">
       <button
         @click="loadMore"
         :disabled="isLoadingMore"
@@ -173,8 +173,8 @@ const router = useRouter()
 
 // 状态选项
 const statusOptions = [
-  { label: '全部视频', value: '' },
-  { label: '已发布', value: 'ready' },
+  { label: '全部', value: '' },
+  { label: '公开', value: 'public' },
   { label: '私有', value: 'private' },
   { label: '草稿', value: 'draft' }
 ] as const
@@ -226,12 +226,9 @@ watch(filters, async () => {
 const loadVideos = async () => {
   try {
     isLoading.value = true
-    const response = await videoStore.fetchVideos(1, 12, {
-      status: filters.status,
-      sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder
-    })
-    hasMore.value = response.data.total > videoStore.videos.length
+    const response = await videoStore.fetchVideos(1, 12)
+    currentPage.value = 1
+    hasMore.value = videoStore.total > videoStore.videos.length
   } catch (err) {
     console.error('Load videos failed:', err)
   } finally {
@@ -245,11 +242,7 @@ const loadMore = async () => {
   try {
     isLoadingMore.value = true
     currentPage.value++
-    const response = await videoStore.fetchVideos(currentPage.value, 12, {
-      status: filters.status,
-      sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder
-    })
+    const response = await videoStore.fetchVideos(currentPage.value, 12)
     hasMore.value = response.data.total > videoStore.videos.length
   } catch (err) {
     console.error('Load more failed:', err)

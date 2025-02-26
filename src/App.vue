@@ -2,11 +2,14 @@
 import { onMounted } from 'vue'
 import DefaultLayout from './layouts/DefaultLayout.vue'
 import { useThemeStore } from './stores/theme'
+import { useUserStore } from './stores/user'
 
 const themeStore = useThemeStore()
+const userStore = useUserStore()
 
 onMounted(() => {
   themeStore.initTheme()
+  userStore.initializeFromStorage()
 })
 </script>
 

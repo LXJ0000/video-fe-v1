@@ -371,7 +371,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Plyr from 'plyr'
 import 'plyr/dist/plyr.css'
 import { videoApi } from '../api/video'
@@ -391,8 +391,10 @@ import NoteList from '@/components/marks/NoteList.vue'
 import { useMarksStore } from '@/stores/marks'
 import { useNotesStore } from '@/stores/notes'
 import {message} from '@/utils/message'
+import { useUserStore } from '../stores/user'
 
 const route = useRoute()
+const router = useRouter()
 const videoPlayer = ref<HTMLVideoElement | null>(null)
 const player = ref<Plyr | null>(null)
 const video = ref<VideoItem | null>(null)
@@ -437,7 +439,7 @@ const notesStore = useNotesStore()
 const newNote = ref('')
 const currentTime = computed(() => videoPlayer.value?.currentTime || 0)
 const videoId = computed(() => video.value?.id || '')
-const currentUserId = ref('test_user_id') // 后续从用户状态获取
+const userStore = useUserStore()
 
 // 检查播放器是否可用
 const isPlayerReady = (p: Plyr | null): p is Plyr => {
@@ -648,6 +650,14 @@ const toggleSidebar = () => {
 
 // 修改添加标记方法
 const handleAddMark = async () => {
+  if (!userStore.isAuthenticated) {
+    message.warning('请先登录')
+    router.push({
+      path: '/login',
+      query: { redirect: router.currentRoute.value.fullPath }
+    })
+    return
+  }
   if (!videoPlayer.value || !video.value) {
     message.error('视频未准备就绪')
     return
@@ -657,7 +667,6 @@ const handleAddMark = async () => {
     const timestamp = videoPlayer.value.currentTime
     await marksStore.addMark({
       videoId: video.value.id,
-      userId: currentUserId.value,
       timestamp,
       content: `在 ${formatTime(timestamp)} 添加的标记`
     })
@@ -668,6 +677,14 @@ const handleAddMark = async () => {
 
 // 修改添加笔记方法
 const handleAddNote = async () => {
+  if (!userStore.isAuthenticated) {
+    message.warning('请先登录')
+    router.push({
+      path: '/login',
+      query: { redirect: router.currentRoute.value.fullPath }
+    })
+    return
+  }
   if (!videoPlayer.value || !video.value) {
     message.error('视频未准备就绪')
     return
@@ -677,7 +694,6 @@ const handleAddNote = async () => {
     const timestamp = videoPlayer.value.currentTime
     await notesStore.addNote({
       videoId: video.value.id,
-      userId: currentUserId.value,
       timestamp,
       content: `在 ${formatTime(timestamp)} 添加的笔记`
     })
@@ -702,11 +718,11 @@ const seekToTime = (timestamp: number) => {
 
 // 初始化 stores 的数据
 const initializeData = async () => {
-  if (video.value) {
+  if (video.value && userStore.isAuthenticated) {
     try {
       await Promise.all([
-        marksStore.fetchMarks('test_user_id', video.value.id),
-        notesStore.fetchNotes('test_user_id', video.value.id)
+        marksStore.fetchMarks(video.value.id),
+        notesStore.fetchNotes(video.value.id)
       ])
     } catch (error) {
       console.error('Failed to initialize data:', error)
