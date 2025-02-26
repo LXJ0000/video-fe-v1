@@ -11,16 +11,6 @@ const router = createRouter({
       meta: { keepAlive: false }
     },
     {
-      path: '/login',
-      name: 'login',
-      component: () => import('../views/auth/LoginView.vue')
-    },
-    {
-      path: '/register',
-      name: 'register',
-      component: () => import('../views/auth/RegisterView.vue')
-    },
-    {
       path: '/manage',
       name: 'manage',
       component: () => import('../views/VideoManageView.vue'),

@@ -33,7 +33,7 @@ export const useUserStore = defineStore('user', () => {
         localStorage.setItem('user', JSON.stringify(data.data.user))
         localStorage.setItem('token', data.data.token)
         
-        message.success('登录成功')
+        // message.success('登录成功')
         return true
       } else {
         message.error(data.msg || '登录失败')

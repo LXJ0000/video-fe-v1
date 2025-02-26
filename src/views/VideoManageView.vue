@@ -78,35 +78,15 @@
 
     <!-- 视频列表 -->
     <div v-if="!isLoading && videoStore.videos.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <div
+      <VideoCard
         v-for="video in videoStore.videos"
         :key="video.id"
-        class="group relative"
-      >
-        <!-- 视频卡片容器 -->
-        <div 
-          class="block h-full cursor-pointer" 
-          @click="handleCardClick(video.id, $event)"
-        >
-          <!-- 选择框 -->
-          <div class="absolute top-3 left-3 z-20">
-            <input
-              type="checkbox"
-              :checked="selectedVideos.includes(video.id)"
-              @click.stop
-              @change="toggleSelect(video.id)"
-              class="w-5 h-5 rounded-md border-2 border-white bg-black/30 checked:bg-primary-light checked:border-primary-light focus:ring-primary-light transition-colors duration-300 cursor-pointer"
-            >
-          </div>
-
-          <VideoCard
-            :video="video"
-            @update="handleVideoUpdate"
-            @delete="handleVideoDelete"
-            class="h-full"
-          />
-        </div>
-      </div>
+        :video="video"
+        :class="{ 'video-card': true }"
+        v-bind="$attrs"
+        @update="handleVideoUpdate"
+        @delete="handleVideoDelete"
+      />
     </div>
 
     <!-- 空状态 -->

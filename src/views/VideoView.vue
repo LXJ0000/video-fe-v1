@@ -366,6 +366,14 @@
         </Dialog>
       </TransitionRoot>
     </div>
+
+    <!-- 登录模态框 -->
+    <AuthModal
+      :is-open="showAuthModal"
+      :redirect="route.fullPath"
+      @close="showAuthModal = false"
+      @success="handleAuthSuccess"
+    />
   </div>
 </template>
 
@@ -392,6 +400,7 @@ import { useMarksStore } from '@/stores/marks'
 import { useNotesStore } from '@/stores/notes'
 import {message} from '@/utils/message'
 import { useUserStore } from '../stores/user'
+import AuthModal from '@/components/AuthModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -440,6 +449,9 @@ const newNote = ref('')
 const currentTime = computed(() => videoPlayer.value?.currentTime || 0)
 const videoId = computed(() => video.value?.id || '')
 const userStore = useUserStore()
+
+// 添加登录模态框状态
+const showAuthModal = ref(false)
 
 // 检查播放器是否可用
 const isPlayerReady = (p: Plyr | null): p is Plyr => {
@@ -651,11 +663,7 @@ const toggleSidebar = () => {
 // 修改添加标记方法
 const handleAddMark = async () => {
   if (!userStore.isAuthenticated) {
-    message.warning('请先登录')
-    router.push({
-      path: '/login',
-      query: { redirect: router.currentRoute.value.fullPath }
-    })
+    showAuthModal.value = true
     return
   }
   if (!videoPlayer.value || !video.value) {
@@ -678,11 +686,7 @@ const handleAddMark = async () => {
 // 修改添加笔记方法
 const handleAddNote = async () => {
   if (!userStore.isAuthenticated) {
-    message.warning('请先登录')
-    router.push({
-      path: '/login',
-      query: { redirect: router.currentRoute.value.fullPath }
-    })
+    showAuthModal.value = true
     return
   }
   if (!videoPlayer.value || !video.value) {
@@ -800,6 +804,13 @@ const formatTime = (seconds: number) => {
   const mins = Math.floor(seconds / 60)
   const secs = Math.floor(seconds % 60)
   return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+// 添加登录成功处理
+const handleAuthSuccess = () => {
+  showAuthModal.value = false
+  // 登录成功后重新加载数据
+  initializeData()
 }
 </script>
 
