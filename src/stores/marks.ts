@@ -66,7 +66,14 @@ export const useMarksStore = defineStore('marks', () => {
       if (response.data.code === 0) {
         const index = marks.value.findIndex(m => m.id === markId)
         if (index !== -1) {
-          marks.value[index] = response.data.data
+          // 确保返回数据完整，如果不完整则合并现有数据
+          const updatedMark = response.data.data || {}
+          marks.value[index] = {
+            ...marks.value[index],  // 保留原有数据
+            ...updatedMark,         // 覆盖更新的数据
+            content: data.content,  // 确保内容更新
+            timestamp: data.timestamp // 确保时间戳更新
+          }
         }
         message.success('更新标记成功')
       } else {
@@ -105,7 +112,13 @@ export const useMarksStore = defineStore('marks', () => {
         if (mark && mark.annotations) {
           const index = mark.annotations.findIndex(a => a.id === annotationId)
           if (index !== -1) {
-            mark.annotations[index] = response.data.data
+            // 确保返回数据完整，如果不完整则合并现有数据
+            const updatedAnnotation = response.data.data || {}
+            mark.annotations[index] = {
+              ...mark.annotations[index],  // 保留原有数据
+              ...updatedAnnotation,        // 覆盖更新的数据
+              content: content             // 确保内容更新
+            }
           }
         }
         message.success('更新注释成功')

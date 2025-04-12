@@ -84,9 +84,7 @@ export const videoApi = {
     return privateApiClient.post(API_ENDPOINTS.MARKS, data)
   },
 
-  updateMark(markId: string, data: {
-    content: string
-  }) {
+  updateMark(markId: string, data: UpdateMarkParams) {
     return privateApiClient.put(API_ENDPOINTS.MARK_UPDATE(markId), data)
   },
 

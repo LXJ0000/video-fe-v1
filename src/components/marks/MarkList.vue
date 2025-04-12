@@ -211,17 +211,40 @@ const handleUpdateMark = async (markId: string) => {
   const mark = safeMarks.value.find(m => m.id === markId)
   if (!mark) return
 
-  const newMark = mark
-  newMark.content = editingContent.value.trim()
-  await marksStore.updateMark(markId, mark)
+  // 先保存需要更新的内容
+  const content = editingContent.value.trim()
+  const timestamp = mark.timestamp
+  
+  // 先取消编辑状态，避免DOM更新冲突
   cancelEdit()
+  
+  // 然后再发送更新请求
+  try {
+    await marksStore.updateMark(markId, {
+      content,
+      timestamp
+    })
+  } catch (error) {
+    console.error('Failed to update mark:', error)
+  }
 }
 
 // 更新注释
 const handleUpdateAnnotation = async (markId: string, annotationId: string) => {
   if (!editingContent.value.trim()) return
-  await marksStore.updateAnnotation(markId, annotationId, editingContent.value.trim())
+  
+  // 先保存需要更新的内容
+  const content = editingContent.value.trim()
+  
+  // 先取消编辑状态，避免DOM更新冲突
   cancelEdit()
+  
+  // 然后再发送更新请求
+  try {
+    await marksStore.updateAnnotation(markId, annotationId, content)
+  } catch (error) {
+    console.error('Failed to update annotation:', error)
+  }
 }
 
 const formatTime = (seconds: number) => {
