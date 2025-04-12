@@ -172,8 +172,8 @@ import {
   TransitionChild,
   TransitionRoot,
 } from '@headlessui/vue'
-import { useUserStore } from '../stores/user'
-import { message } from '../utils/message'
+import { useUserStore } from '@/stores/user'
+import { message } from '@/utils/message'
 
 const props = defineProps<{
   isOpen: boolean

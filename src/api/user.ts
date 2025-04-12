@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { API_BASE_URL, ApiResponse, publicApiClient } from './config'
-import type { RegisterParams, LoginParams, LoginResponse } from '../types/user'
+import type { RegisterParams, LoginParams, LoginResponse } from '@/types/user'
 
 export const userApi = {
   // 用户注册

@@ -3,6 +3,10 @@
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   }
 } 

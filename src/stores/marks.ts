@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { videoApi, type Mark, type UpdateMarkParams, type UpdateAnnotationParams } from '@/api/video'
 import { message } from '@/utils/message'
-import { useUserStore } from './user'
+import { useUserStore } from '@/stores/user'
 
 export const useMarksStore = defineStore('marks', () => {
   const userStore = useUserStore()

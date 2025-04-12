@@ -112,9 +112,9 @@
 <script setup lang="ts">
 import { ref, inject } from 'vue'
 import { useRouter } from 'vue-router'
-import { useVideoStore } from '../stores/video'
-import { useThemeStore } from '../stores/theme'
-import { useUserStore } from '../stores/user'
+import { useVideoStore } from '@/stores/video'
+import { useThemeStore } from '@/stores/theme'
+import { useUserStore } from '@/stores/user'
 import {
   PlusIcon,
   SunIcon,
@@ -122,7 +122,7 @@ import {
   FolderIcon,
   ChevronDownIcon
 } from '@heroicons/vue/24/outline'
-import UploadDialog from '../components/UploadDialog.vue'
+import UploadDialog from '@/components/UploadDialog.vue'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import AuthModal from '@/components/AuthModal.vue'
 

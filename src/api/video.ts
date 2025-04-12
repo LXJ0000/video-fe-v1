@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS, ApiResponse, privateApiClient, publicApiClient } from './config'
-import type { VideoStatus, VideoListParams, VideoItem } from '../types/video'
+import type { VideoStatus, VideoListParams, VideoItem } from '@/types/video'
 
 // 视频相关 API
 export const videoApi = {

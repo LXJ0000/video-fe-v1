@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { videoApi, type Note, type UpdateNoteParams } from "@/api/video";
 import { message } from "@/utils/message";
-import { useUserStore } from "./user";
+import { useUserStore } from "@/stores/user";
 
 export const useNotesStore = defineStore("notes", () => {
   const userStore = useUserStore();
