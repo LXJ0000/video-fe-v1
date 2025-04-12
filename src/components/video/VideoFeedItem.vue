@@ -195,6 +195,24 @@ watch(() => props.active, (newValue) => {
   }
 })
 
+// 组件卸载时暂停视频
+onUnmounted(() => {
+  if (videoRef.value) {
+    videoRef.value.pause()
+  }
+  
+  // 移除空格键事件监听
+  window.removeEventListener('keydown', handleKeydown)
+})
+
+// 空格键控制播放/暂停
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.code === 'Space' && props.active) {
+    e.preventDefault() // 防止页面滚动
+    togglePlay()
+  }
+}
+
 // 监听视频加载
 onMounted(() => {
   if (videoRef.value) {
@@ -217,13 +235,9 @@ onMounted(() => {
       isPlaying.value = false
     })
   }
-})
-
-// 组件卸载时暂停视频
-onUnmounted(() => {
-  if (videoRef.value) {
-    videoRef.value.pause()
-  }
+  
+  // 添加空格键事件监听
+  window.addEventListener('keydown', handleKeydown)
 })
 </script>
 
