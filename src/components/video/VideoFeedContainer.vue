@@ -235,13 +235,37 @@ onMounted(() => {
   if (containerRef.value) {
     containerRef.value.focus()
     document.addEventListener('click', handleClickOutside)
+    
+    // 添加滚轮事件监听器，处理触控板滑动
+    containerRef.value.addEventListener('wheel', handleWheel, { passive: false })
   }
 })
 
 // 组件卸载时清理事件监听
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  
+  // 移除滚轮事件监听器
+  if (containerRef.value) {
+    containerRef.value.removeEventListener('wheel', handleWheel)
+  }
 })
+
+// 处理触控板滑动（滚轮事件）
+const handleWheel = (e: WheelEvent) => {
+  // 阻止默认滚动行为
+  e.preventDefault()
+  
+  // 设置滑动阈值，避免轻微滑动就切换
+  const wheelThreshold = 300
+  
+  // 判断滑动方向并切换视频
+  if (e.deltaY > wheelThreshold && canGoNext.value) {
+    goToNext()
+  } else if (e.deltaY < -wheelThreshold && canGoPrev.value) {
+    goToPrev()
+  }
+}
 </script>
 
 <style scoped>
