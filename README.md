@@ -268,37 +268,242 @@ npm run build
 - 使用 Prettier 进行代码格式化
 - 遵循 Vue 3 组合式 API 风格指南
 
-## 最近更新 (2024-03-21)
+## 最近更新 (2024-03-22)
 
-### 视频时长功能
-- ✅ 上传时自动获取视频时长
-- ✅ 视频卡片显示时长
-- ✅ 智能时长格式化（小时:分钟:秒）
-- ✅ 统一首页和管理页的时长显示
+### 主题系统优化
+- ✅ 实现动态主题切换功能
+- ✅ 优化视频播放页面的暗色模式体验
+- ✅ 添加主题状态持久化
+- ✅ 自动保存和恢复用户主题偏好
 
-### 视频管理优化
-- ✅ 添加全选功能
-- ✅ 支持批量删除
-- ✅ 优化空状态显示
-- ✅ 统一首页和管理页的空状态样式
+### 笔记系统实现
+- ✅ 创建笔记数据结构和状态管理
+- ✅ 实现笔记的增删改查功能
+- ✅ 添加笔记操作的用户反馈
+- ✅ 优化笔记编辑界面
 
-### 界面优化
-- ✅ 优化视频卡片布局
-- ✅ 统一视频展示样式
-- ✅ 优化暗色模式显示
-- ✅ 改进操作按钮样式
+### 代码架构优化
+- ✅ 重构消息提示系统，统一使用 ant-design-vue 的 message 组件
+- ✅ 优化组件生命周期管理
+- ✅ 改进状态管理逻辑
+- ✅ 完善错误处理机制
 
-### 视频状态管理优化
-- ✅ 更新视频状态类型：public 改为 ready，表示已发布状态
-- ✅ 添加 draft（草稿）状态
-- ✅ 优化状态筛选逻辑，支持空值表示全部视频
-- ✅ 更新状态标签样式：已发布（绿色）、私有（灰色）、草稿（黄色）
+### 用户体验改进
+- ✅ 添加操作成功/失败的即时反馈
+- ✅ 优化加载状态展示
+- ✅ 改进表单交互体验
+- ✅ 统一界面交互风格
 
-### 用户系统基础实现
-- ✅ 创建注册/登录页面
-- ✅ 实现用户状态管理
-- ✅ 添加路由守卫基础结构
-- ✅ 创建用户API接口
+## 技术实现细节
+
+### 主题系统
+- 使用 Pinia 进行主题状态管理
+  ```typescript
+  export const useThemeStore = defineStore('theme', () => {
+    const theme = ref<'light' | 'dark'>('light')
+    const systemTheme = ref<'light' | 'dark'>('light')
+    
+    // 监听系统主题变化
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    watch(mediaQuery, (e) => {
+      systemTheme.value = e.matches ? 'dark' : 'light'
+    })
+    
+    // 切换主题
+    function setTheme(newTheme: 'light' | 'dark') {
+      theme.value = newTheme
+      document.documentElement.classList.toggle('dark', newTheme === 'dark')
+    }
+    
+    // 持久化主题设置
+    const storage = useStorage()
+    watch(theme, (value) => {
+      storage.set('theme', value)
+    })
+  })
+  ```
+
+### 笔记功能
+- 基于 TypeScript 的数据模型
+  ```typescript
+  interface Note {
+    id: string
+    videoId: string
+    content: string
+    timestamp: number  // 视频时间点
+    createdAt: Date
+    updatedAt: Date
+  }
+
+  interface NoteState {
+    notes: Note[]
+    loading: boolean
+    error: Error | null
+  }
+  ```
+
+- 笔记状态管理
+  ```typescript
+  export const useNoteStore = defineStore('notes', {
+    state: (): NoteState => ({
+      notes: [],
+      loading: false,
+      error: null
+    }),
+    
+    actions: {
+      async addNote(note: Omit<Note, 'id'>) {
+        try {
+          this.loading = true
+          const response = await videoApi.createNote(note)
+          this.notes.push(response.data)
+          message.success('笔记添加成功')
+        } catch (error) {
+          message.error('添加笔记失败')
+          this.error = error
+        } finally {
+          this.loading = false
+        }
+      }
+    }
+  })
+  ```
+
+### 性能优化
+1. 组件懒加载
+```typescript
+// 路由配置中使用
+const routes = [
+  {
+    path: '/video/:id',
+    component: () => import('@/views/VideoPlayer.vue'),
+    meta: { requiresAuth: true }
+  }
+]
+```
+
+2. 虚拟列表实现
+```typescript
+// 视频列表虚拟滚动
+const videoList = ref<Video[]>([])
+const containerHeight = ref(800)
+const itemHeight = 200
+const visibleCount = computed(() => Math.ceil(containerHeight.value / itemHeight))
+
+const visibleVideos = computed(() => {
+  const start = Math.floor(scrollTop.value / itemHeight)
+  const end = Math.min(start + visibleCount.value, videoList.value.length)
+  return videoList.value.slice(start, end)
+})
+```
+
+3. 状态持久化
+```typescript
+// 封装 Storage 工具
+export const useStorage = () => {
+  const set = <T>(key: string, value: T) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value))
+    } catch (error) {
+      console.error('Storage error:', error)
+    }
+  }
+
+  const get = <T>(key: string, defaultValue: T): T => {
+    try {
+      const item = localStorage.getItem(key)
+      return item ? JSON.parse(item) : defaultValue
+    } catch {
+      return defaultValue
+    }
+  }
+
+  return { set, get }
+}
+```
+
+4. 防抖与节流优化
+```typescript
+// 防抖工具函数
+export function debounce<T extends (...args: any[]) => any>(
+  fn: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let timer: number | null = null
+  
+  return function(this: any, ...args: Parameters<T>) {
+    if (timer) clearTimeout(timer)
+    timer = window.setTimeout(() => {
+      fn.apply(this, args)
+      timer = null
+    }, delay)
+  }
+}
+
+// 应用示例
+const handleSearch = debounce((keyword: string) => {
+  searchVideos(keyword)
+}, 300)
+```
+
+### 错误处理
+```typescript
+// 全局错误处理
+app.config.errorHandler = (err, vm, info) => {
+  console.error('Global error:', err)
+  message.error('操作失败，请稍后重试')
+  
+  // 错误上报
+  errorTracker.capture(err, {
+    component: vm?.$options.name,
+    info,
+    timestamp: Date.now()
+  })
+}
+
+// API 错误拦截
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      userStore.logout()
+      router.push('/login')
+    }
+    return Promise.reject(error)
+  }
+)
+```
+
+### 测试实现
+```typescript
+// 组件测试示例
+describe('VideoPlayer', () => {
+  it('should update playback speed', async () => {
+    const wrapper = mount(VideoPlayer)
+    await wrapper.find('.speed-control').trigger('click')
+    await wrapper.find('.speed-2x').trigger('click')
+    
+    expect(wrapper.vm.currentSpeed).toBe(2)
+    expect(wrapper.emitted('speed-change')?.[0]).toEqual([2])
+  })
+})
+
+// Store 测试示例
+describe('noteStore', () => {
+  it('should add note successfully', async () => {
+    const store = useNoteStore()
+    const note = {
+      videoId: '1',
+      content: 'Test note',
+      timestamp: 60
+    }
+    
+    await store.addNote(note)
+    expect(store.notes).toHaveLength(1)
+    expect(store.notes[0].content).toBe('Test note')
+  })
+})
+```
 
 ## 下一步计划
 
