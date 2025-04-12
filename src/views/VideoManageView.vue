@@ -84,6 +84,7 @@
         :video="video"
         :class="{ 'video-card': true }"
         v-bind="$attrs"
+        @click="(event) => handleCardClick(video.id, event)"
         @update="handleVideoUpdate"
         @delete="handleVideoDelete"
       />

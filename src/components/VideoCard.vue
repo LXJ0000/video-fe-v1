@@ -1,5 +1,9 @@
 <template>
-  <div :class="$attrs.class">
+  <div 
+    :class="$attrs.class" 
+    @click="$emit('click', $event)" 
+    class="cursor-pointer"
+  >
     <div class="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
       <!-- 视频缩略图容器 -->
       <div class="aspect-video relative overflow-hidden">
@@ -25,7 +29,7 @@
         </div>
 
         <!-- 操作菜单 -->
-        <div class="absolute top-2 right-2 z-10">
+        <div class="absolute top-2 right-2 z-10 video-action-menu" @click.stop>
           <VideoActionMenu
             :video="video"
             @edit="handleEdit"
@@ -133,6 +137,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update', video: VideoItem): void
   (e: 'delete', video: VideoItem): void
+  (e: 'click', event: Event): void
 }>()
 
 const showEditDialog = ref(false)
