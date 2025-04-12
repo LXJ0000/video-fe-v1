@@ -144,6 +144,15 @@ const handleLoadMore = async () => {
     }
   } catch (err) {
     console.error('Failed to load more videos:', err)
+  } finally {
+    // 确保加载指示器被清除，无论成功还是失败
+    const videoFeedContainer = document.querySelector('.video-feed-container');
+    if (videoFeedContainer) {
+      const loadingIndicator = videoFeedContainer.querySelector('.animate-spin');
+      if (loadingIndicator) {
+        loadingIndicator.parentElement.style.display = 'none';
+      }
+    }
   }
 }
 

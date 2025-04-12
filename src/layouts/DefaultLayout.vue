@@ -94,8 +94,11 @@
               </router-link>
             </div>
             <!-- 主题切换 -->
-            <button @click="themeStore.toggleTheme"
-              class="p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors duration-300">
+            <button 
+              v-if="!isVideoFeedPage"
+              @click="themeStore.toggleTheme"
+              class="p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors duration-300"
+            >
               <SunIcon v-if="themeStore.isDark" class="w-5 h-5" />
               <MoonIcon v-else class="w-5 h-5" />
             </button>
@@ -118,8 +121,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, inject, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useVideoStore } from '@/stores/video'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -135,6 +138,7 @@ import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import AuthModal from '@/components/AuthModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 const videoStore = useVideoStore()
 const themeStore = useThemeStore()
 const userStore = useUserStore()
@@ -142,6 +146,8 @@ const showUploadDialog = ref(false)
 const searchQuery = ref('')
 const searchResults = ref([])
 const showAuthModal = ref(false)
+
+const isVideoFeedPage = computed(() => route.name === 'feed')
 
 const handleUploadSuccess = async () => {
   showUploadDialog.value = false

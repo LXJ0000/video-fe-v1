@@ -221,6 +221,7 @@ const handleClickOutside = (event: MouseEvent) => {
 
 // 监听视频列表变化
 watch(() => props.videos.length, (newLength, oldLength) => {
+  // 加载完成后，隐藏加载指示器
   isLoadingMore.value = false
   
   // 如果是首次加载视频，设置 currentIndex 为 0
