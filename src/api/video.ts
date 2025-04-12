@@ -130,9 +130,7 @@ export const videoApi = {
     return privateApiClient.post(API_ENDPOINTS.NOTES, data)
   },
 
-  updateNote(noteId: string, data: {
-    content: string
-  }) {
+  updateNote(noteId: string, data: UpdateNoteParams) {
     return privateApiClient.put(API_ENDPOINTS.NOTE_UPDATE(noteId), data)
   },
 

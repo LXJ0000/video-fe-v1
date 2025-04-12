@@ -60,10 +60,7 @@ export const useMarksStore = defineStore('marks', () => {
     }
   }
 
-  const updateMark = async (markId: string, data: {
-    content: string
-    timestamp: number
-  }) => {
+  const updateMark = async (markId: string, data: UpdateMarkParams) => {
     try {
       const response = await videoApi.updateMark(markId, data)
       if (response.data.code === 0) {

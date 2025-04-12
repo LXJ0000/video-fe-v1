@@ -211,10 +211,9 @@ const handleUpdateMark = async (markId: string) => {
   const mark = safeMarks.value.find(m => m.id === markId)
   if (!mark) return
 
-  await marksStore.updateMark(markId, {
-    content: editingContent.value.trim(),
-    timestamp: mark.timestamp
-  })
+  const newMark = mark
+  newMark.content = editingContent.value.trim()
+  await marksStore.updateMark(markId, mark)
   cancelEdit()
 }
 

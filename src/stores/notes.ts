@@ -51,10 +51,7 @@ export const useNotesStore = defineStore("notes", () => {
     }
   };
 
-  const updateNote = async (noteId: string, data: {
-    content: string
-    timestamp: number
-  }) => {
+  const updateNote = async (noteId: string, data: UpdateNoteParams) => {
     try {
       const response = await videoApi.updateNote(noteId, data)
       if (response.data.code === 0) {

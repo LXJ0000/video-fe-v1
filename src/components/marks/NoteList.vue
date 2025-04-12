@@ -147,10 +147,9 @@ const handleUpdateNote = async (noteId: string) => {
   const note = safeNotes.value.find(n => n.id === noteId)
   if (!note) return
 
-  await notesStore.updateNote(noteId, {
-    content: editingContent.value.trim(),
-    timestamp: note.timestamp
-  })
+  const NewNote = note
+  NewNote.content = editingContent.value.trim()
+  await notesStore.updateNote(noteId, NewNote)
   cancelEdit()
 }
 
