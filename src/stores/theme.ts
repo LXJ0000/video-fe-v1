@@ -32,6 +32,11 @@ export const useThemeStore = defineStore('theme', () => {
     isDark.value = !isDark.value
   }
 
+  // 设置特定主题
+  const setTheme = (theme: 'dark' | 'light') => {
+    isDark.value = theme === 'dark'
+  }
+
   // 监听主题变化
   watch(isDark, () => {
     updateTheme()
@@ -40,6 +45,7 @@ export const useThemeStore = defineStore('theme', () => {
   return {
     isDark,
     toggleTheme,
-    initTheme
+    initTheme,
+    setTheme
   }
 }) 

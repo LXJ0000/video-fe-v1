@@ -1,5 +1,5 @@
 <template>
-  <div class="video-feed-view h-screen w-full bg-black flex flex-col overflow-hidden">
+  <div class="video-feed-view h-screen w-full bg-black flex flex-col pt-16 dark">
     <!-- 顶部导航栏 -->
     <div class="fixed top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/70 to-transparent p-4">
       <div class="flex items-center justify-between">
@@ -88,19 +88,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeMount, onUnmounted } from 'vue'
 import { useVideoStore } from '../stores/video'
+import { useThemeStore } from '../stores/theme'
 import VideoFeedContainer from '../components/video/VideoFeedContainer.vue'
 import type { VideoItem } from '../types/video'
 
 // 状态变量
 const videoStore = useVideoStore()
+const themeStore = useThemeStore()
 const isLoading = ref(true)
 const error = ref('')
 const videos = ref<VideoItem[]>([])
 const currentPage = ref(1)
 const feedContainer = ref<HTMLElement | null>(null)
 const showGuide = ref(false) // 可以根据用户是否首次使用来决定是否显示引导
+const previousTheme = ref<'dark' | 'light'>(localStorage.getItem('theme') as 'dark' | 'light' || 'light')
 
 // 加载视频
 const loadVideos = async () => {
@@ -150,8 +153,17 @@ const handleVideoChange = (index: number) => {
   // 这里可以添加分析或埋点逻辑
 }
 
+// 进入页面时强制黑暗模式
+onBeforeMount(() => {
+  // 保存当前主题
+  previousTheme.value = themeStore.isDark ? 'dark' : 'light'
+  // 强制设置为黑暗模式
+  themeStore.setTheme('dark')
+})
+
 // 初始化
 onMounted(() => {
+  // 初始化视频加载
   loadVideos()
   
   // 处理滚动锁定
@@ -162,6 +174,12 @@ onMounted(() => {
     document.body.style.overflow = ''
   }
 })
+
+// 在组件卸载时，恢复之前的主题
+onUnmounted(() => {
+  // 恢复之前的主题设置
+  themeStore.setTheme(previousTheme.value)
+})
 </script>
 
 <style scoped>
@@ -171,6 +189,6 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 50;
+  z-index: 10; /* 降低z-index以确保导航栏在上面 */
 }
 </style> 

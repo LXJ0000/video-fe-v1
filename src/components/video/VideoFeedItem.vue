@@ -80,6 +80,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ASSETS_BASE_URL } from '@/api/config'
 import type { VideoItem } from '@/types/video'
+import { videoApi } from '@/api/video'
 
 const props = defineProps<{
   video: VideoItem
@@ -105,14 +106,8 @@ const progress = ref(0)
 
 // 计算属性
 const videoUrl = computed(() => {
-  // 使用API中获取视频流地址的逻辑
-  const token = localStorage.getItem('token') || ''
-  const url = new URL(`${ASSETS_BASE_URL}/api/videos/${props.video.id}/stream`)
-  url.searchParams.set('t', Date.now().toString())
-  if (token) {
-    url.searchParams.set('token', token)
-  }
-  return url.toString()
+  // 使用API中的getVideoStreamUrl方法获取正确的视频流地址
+  return videoApi.getVideoStreamUrl(props.video.id)
 })
 
 const posterUrl = computed(() => {

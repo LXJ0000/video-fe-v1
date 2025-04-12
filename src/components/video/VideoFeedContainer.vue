@@ -44,18 +44,32 @@
     
     <!-- 播放速度控制 -->
     <div class="absolute left-3 bottom-24 z-10">
-      <div class="bg-black/30 backdrop-blur-sm rounded-full px-3 py-1 text-white text-xs flex items-center">
-        <span>速度:</span>
-        <select 
-          v-model="playbackSpeed" 
-          class="ml-1 bg-transparent text-white outline-none"
-          @change="handleSpeedChange"
-        >
-          <option value="0.5">0.5x</option>
-          <option value="1">1.0x</option>
-          <option value="1.5">1.5x</option>
-          <option value="2">2.0x</option>
-        </select>
+      <div class="bg-black/60 backdrop-blur-sm rounded-full px-4 py-2.5 text-white flex items-center shadow-lg">
+        <span class="text-sm font-medium mr-2">{{ currentSpeed }}x</span>
+        <div class="relative">
+          <button 
+            @click="toggleSpeedOptions" 
+            class="flex items-center text-sm focus:outline-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          
+          <div v-if="showSpeedOptions" class="absolute bottom-full left-0 mb-2 bg-black/80 backdrop-blur-sm rounded-lg overflow-hidden shadow-lg">
+            <div class="py-1">
+              <button 
+                v-for="speed in speedOptions" 
+                :key="speed"
+                @click="changeSpeed(speed)"
+                class="block w-full px-4 py-2 text-sm text-left hover:bg-white/10"
+                :class="{'text-primary-light font-medium': currentSpeed === speed}"
+              >
+                {{ speed }}x
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -70,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useSwipe } from '@vueuse/core'
 import VideoFeedItem from './VideoFeedItem.vue'
 import type { VideoItem } from '@/types/video'
@@ -94,7 +108,11 @@ const currentIndex = ref(0)
 const touchStartY = ref(0)
 const touchDeltaY = ref(0)
 const isLoadingMore = ref(false)
-const playbackSpeed = ref('1')
+
+// 播放速度相关
+const speedOptions = ['0.5', '1.0', '1.5', '2.0']
+const currentSpeed = ref('1.0')
+const showSpeedOptions = ref(false)
 
 // 计算属性
 const canGoPrev = computed(() => currentIndex.value > 0)
@@ -156,16 +174,6 @@ const handleVideoEnded = (index: number) => {
   }
 }
 
-// 播放速度变化处理
-const handleSpeedChange = () => {
-  const videoElements = document.querySelectorAll('video')
-  const speed = parseFloat(playbackSpeed.value)
-  
-  videoElements.forEach(video => {
-    video.playbackRate = speed
-  })
-}
-
 // 导航方法
 const goToPrev = () => {
   if (canGoPrev.value) {
@@ -187,6 +195,30 @@ const goToNext = () => {
   }
 }
 
+// 播放速度相关方法
+const toggleSpeedOptions = () => {
+  showSpeedOptions.value = !showSpeedOptions.value
+}
+
+const changeSpeed = (speed: string) => {
+  currentSpeed.value = speed
+  showSpeedOptions.value = false
+  
+  // 更新所有视频的播放速度
+  const videoElements = document.querySelectorAll('video')
+  const numericSpeed = parseFloat(speed)
+  videoElements.forEach(video => {
+    video.playbackRate = numericSpeed
+  })
+}
+
+// 点击外部关闭速度选项菜单
+const handleClickOutside = (event: MouseEvent) => {
+  if (showSpeedOptions.value && containerRef.value && !containerRef.value.contains(event.target as Node)) {
+    showSpeedOptions.value = false
+  }
+}
+
 // 监听视频列表变化
 watch(() => props.videos.length, (newLength, oldLength) => {
   isLoadingMore.value = false
@@ -201,7 +233,13 @@ watch(() => props.videos.length, (newLength, oldLength) => {
 onMounted(() => {
   if (containerRef.value) {
     containerRef.value.focus()
+    document.addEventListener('click', handleClickOutside)
   }
+})
+
+// 组件卸载时清理事件监听
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
