@@ -14,22 +14,25 @@ export const useMarksStore = defineStore('marks', () => {
       if (!userStore.isAuthenticated) {
         throw new Error('用户未登录')
       }
-      
       currentVideoId.value = videoId
       const { data } = await videoApi.getMarks(videoId)
       if (data.code === 0) {
-        marks.value = data.data.map((mark: Mark) => ({
-          ...mark,
-          annotations: mark.annotations || [], // 确保 annotations 始终是数组
-          // 如果时间是默认值，使用当前时间
+        if (data.data !== null) {
+          marks.value = data.data.map((mark: Mark) => ({
+            ...mark,
+            annotations: mark.annotations || [], // 确保 annotations 始终是数组
+            // 如果时间是默认值，使用当前时间
           createdAt: mark.createdAt === "0001-01-01T00:00:00Z" ? new Date().toISOString() : mark.createdAt,
           updatedAt: mark.updatedAt === "0001-01-01T00:00:00Z" ? new Date().toISOString() : mark.updatedAt
-        }))
+          })) 
+        } else {
+          marks.value = []
+        }
       } else {
-        message.error(data.msg || '获取标记失败')
+        message.error(data.msg || '获取标记失败1')
       }
     } catch (error) {
-      message.error('获取标记失败')
+      message.error('获取标记失败2')
       console.error('Failed to fetch marks:', error)
       throw error
     }

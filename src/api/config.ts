@@ -28,7 +28,7 @@ export const API_ENDPOINTS = {
 
 // API 配置
 export const API_CONFIG = {
-  TIMEOUT: 30000, // 30秒
+  TIMEOUT: 300000, // 30秒
   MAX_FILE_SIZE: 1024 * 1024 * 1024, // 1GB
   MAX_THUMBNAIL_SIZE: 2 * 1024 * 1024, // 2MB
   ALLOWED_VIDEO_TYPES: [
