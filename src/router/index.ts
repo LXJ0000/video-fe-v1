@@ -22,6 +22,11 @@ const router = createRouter({
       component: () => import('../views/VideoView.vue')
     },
     {
+      path: '/feed',
+      name: 'feed',
+      component: () => import('../views/VideoFeedView.vue')
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../views/auth/LoginView.vue')
