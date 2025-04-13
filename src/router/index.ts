@@ -35,6 +35,12 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: () => import('../views/auth/RegisterView.vue')
+    },
+    {
+      path: '/profile/:userId',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { title: '个人主页' }
     }
   ]
 })

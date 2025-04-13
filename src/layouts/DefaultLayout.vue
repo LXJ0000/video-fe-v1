@@ -63,6 +63,17 @@
                     </router-link>
                     </MenuItem>
                     <MenuItem v-slot="{ active }">
+                    <router-link 
+                      :to="`/profile/${userStore.currentUser?.id}`" 
+                      :class="[
+                        active ? 'bg-gray-100 dark:bg-gray-700' : '',
+                        'block px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
+                      ]"
+                    >
+                      个人主页
+                    </router-link>
+                    </MenuItem>
+                    <MenuItem v-slot="{ active }">
                     <a href="#" @click.prevent="handleLogout" :class="[
                       active ? 'bg-gray-100 dark:bg-gray-700' : '',
                       'block px-4 py-2 text-sm text-gray-700 dark:text-gray-300'
