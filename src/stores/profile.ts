@@ -82,25 +82,63 @@ export const useProfileStore = defineStore('profile', () => {
       
       const { data } = await userApi.getWatchHistory(userId, page)
       
-      if (data.code === 0) {
+      if (data?.code === 0 && data?.data) {
+        // 确保data.data.items是数组
+        const items = Array.isArray(data.data.items) ? data.data.items : [];
+        
         if (reset || page === 1) {
-          watchHistory.value = data.data
+          watchHistory.value = {
+            ...data.data,
+            items: items,
+            total: data.data.total || 0,
+            page: data.data.page || page,
+            pageSize: data.data.pageSize || 10
+          }
         } else if (watchHistory.value) {
           // 追加新数据
           watchHistory.value = {
             ...data.data,
-            items: [...watchHistory.value.items, ...data.data.items]
+            items: [...(watchHistory.value.items || []), ...items],
+            total: data.data.total || watchHistory.value.total || 0,
+            page: data.data.page || page,
+            pageSize: data.data.pageSize || watchHistory.value.pageSize || 10
           }
         } else {
-          watchHistory.value = data.data
+          watchHistory.value = {
+            ...data.data,
+            items: items,
+            total: data.data.total || 0,
+            page: data.data.page || page,
+            pageSize: data.data.pageSize || 10
+          }
         }
         
         historyCurrentPage.value = page
-        historyHasMore.value = data.data.items.length >= data.data.pageSize
+        historyHasMore.value = items.length >= (data.data.pageSize || 10)
       } else {
-        historyError.value = data.msg || '获取观看历史失败'
+        // 请求成功但返回错误码或没有数据时的兜底处理
+        if (page === 1 || reset) {
+          // 初始化空的历史记录
+          watchHistory.value = {
+            items: [],
+            total: 0,
+            page: page,
+            pageSize: 10
+          }
+        }
+        historyError.value = data?.msg || '获取观看历史失败'
+        console.warn('获取观看历史返回异常数据:', data)
       }
     } catch (error) {
+      // 请求失败的兜底处理
+      if (page === 1 || reset) {
+        watchHistory.value = {
+          items: [],
+          total: 0,
+          page: page,
+          pageSize: 10
+        }
+      }
       historyError.value = '获取观看历史失败，请稍后重试'
       console.error('获取观看历史失败:', error)
     } finally {
@@ -116,25 +154,63 @@ export const useProfileStore = defineStore('profile', () => {
       
       const { data } = await userApi.getFavorites(userId, page)
       
-      if (data.code === 0) {
+      if (data?.code === 0 && data?.data) {
+        // 确保data.data.items是数组
+        const items = Array.isArray(data.data.items) ? data.data.items : [];
+        
         if (reset || page === 1) {
-          favorites.value = data.data
+          favorites.value = {
+            ...data.data,
+            items: items,
+            total: data.data.total || 0,
+            page: data.data.page || page,
+            pageSize: data.data.pageSize || 10
+          }
         } else if (favorites.value) {
           // 追加新数据
           favorites.value = {
             ...data.data,
-            items: [...favorites.value.items, ...data.data.items]
+            items: [...(favorites.value.items || []), ...items],
+            total: data.data.total || favorites.value.total || 0,
+            page: data.data.page || page,
+            pageSize: data.data.pageSize || favorites.value.pageSize || 10
           }
         } else {
-          favorites.value = data.data
+          favorites.value = {
+            ...data.data,
+            items: items,
+            total: data.data.total || 0,
+            page: data.data.page || page,
+            pageSize: data.data.pageSize || 10
+          }
         }
         
         favoritesCurrentPage.value = page
-        favoritesHasMore.value = data.data.items.length >= data.data.pageSize
+        favoritesHasMore.value = items.length >= (data.data.pageSize || 10)
       } else {
-        favoritesError.value = data.msg || '获取收藏列表失败'
+        // 请求成功但返回错误码或没有数据时的兜底处理
+        if (page === 1 || reset) {
+          // 初始化空的收藏列表
+          favorites.value = {
+            items: [],
+            total: 0,
+            page: page,
+            pageSize: 10
+          }
+        }
+        favoritesError.value = data?.msg || '获取收藏列表失败'
+        console.warn('获取收藏列表返回异常数据:', data)
       }
     } catch (error) {
+      // 请求失败的兜底处理
+      if (page === 1 || reset) {
+        favorites.value = {
+          items: [],
+          total: 0,
+          page: page,
+          pageSize: 10
+        }
+      }
       favoritesError.value = '获取收藏列表失败，请稍后重试'
       console.error('获取收藏列表失败:', error)
     } finally {
@@ -166,10 +242,10 @@ export const useProfileStore = defineStore('profile', () => {
     try {
       const { data } = await userApi.removeFromFavorite(videoId)
       
-      if (data.code === 0) {
+      if (data?.code === 0) {
         // 从本地状态中移除
-        if (favorites.value) {
-          favorites.value.items = favorites.value.items.filter(item => item.videoId !== videoId)
+        if (favorites.value && Array.isArray(favorites.value.items)) {
+          favorites.value.items = favorites.value.items.filter(item => item?.videoId !== videoId)
           if (favorites.value.total > 0) {
             favorites.value.total -= 1
           }
@@ -177,7 +253,7 @@ export const useProfileStore = defineStore('profile', () => {
         message.success('移除收藏成功')
         return true
       } else {
-        message.error(data.msg || '移除收藏失败')
+        message.error(data?.msg || '移除收藏失败')
         return false
       }
     } catch (error) {

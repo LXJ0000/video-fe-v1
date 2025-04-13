@@ -188,13 +188,25 @@
           </div>
           
           <!-- 历史列表 -->
-          <div v-else-if="profileStore.watchHistory && profileStore.watchHistory.items.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <VideoCard 
-              v-for="item in profileStore.watchHistory.items" 
-              :key="item.id" 
-              :video="item" 
-              :show-progress="true"
-            />
+          <div v-else-if="profileStore.watchHistory && profileStore.watchHistory.items && profileStore.watchHistory.items.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <template v-for="(item, index) in profileStore.watchHistory.items" :key="item?.id || `history-${index}`">
+              <VideoCard 
+                :video="{
+                  id: item?.id || `history-${index}`,
+                  title: item?.title || '无标题视频',
+                  coverUrl: item?.coverUrl || '',
+                  thumbnailUrl: '',
+                  duration: item?.duration || 0,
+                  createdAt: item?.watchedAt || new Date().toISOString(),
+                  fileSize: 0,
+                  status: 'public',
+                  description: '',
+                  format: '',
+                  stats: { views: 0, likes: 0, comments: 0, shares: 0 }
+                }"
+                :show-progress="true"
+              />
+            </template>
           </div>
           
           <!-- 空状态 -->
@@ -229,12 +241,24 @@
           </div>
           
           <!-- 收藏列表 -->
-          <div v-else-if="profileStore.favorites && profileStore.favorites.items.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <VideoCard 
-              v-for="item in profileStore.favorites.items" 
-              :key="item.id" 
-              :video="item" 
-            />
+          <div v-else-if="profileStore.favorites && profileStore.favorites.items && profileStore.favorites.items.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <template v-for="(item, index) in profileStore.favorites.items" :key="item?.id || `favorite-${index}`">
+              <VideoCard 
+                :video="{
+                  id: item?.id || `favorite-${index}`,
+                  title: item?.title || '无标题视频',
+                  coverUrl: item?.coverUrl || '',
+                  thumbnailUrl: '',
+                  duration: item?.duration || 0,
+                  createdAt: item?.createdAt || new Date().toISOString(),
+                  fileSize: 0,
+                  status: 'public',
+                  description: '',
+                  format: '',
+                  stats: { views: 0, likes: 0, comments: 0, shares: 0 }
+                }"
+              />
+            </template>
           </div>
           
           <!-- 空状态 -->
@@ -383,9 +407,9 @@ const loadMoreFavorites = () => {
 watch(activeTab, (newTab) => {
   if (newTab === 'videos' && videos.value.length === 0) {
     loadUserVideos(1, true)
-  } else if (newTab === 'history' && (!profileStore.watchHistory || profileStore.watchHistory.items.length === 0)) {
+  } else if (newTab === 'history' && (!profileStore.watchHistory || !profileStore.watchHistory.items || profileStore.watchHistory.items.length === 0)) {
     profileStore.fetchWatchHistory(userId.value, 1, true)
-  } else if (newTab === 'favorites' && (!profileStore.favorites || profileStore.favorites.items.length === 0)) {
+  } else if (newTab === 'favorites' && (!profileStore.favorites || !profileStore.favorites.items || profileStore.favorites.items.length === 0)) {
     profileStore.fetchFavorites(userId.value, 1, true)
   }
 })
