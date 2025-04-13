@@ -137,11 +137,23 @@
           
           <!-- 视频列表 -->
           <div v-else-if="videos.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <VideoCard 
-              v-for="video in videos" 
-              :key="video.id" 
-              :video="video" 
-            />
+            <template v-for="(video, index) in videos" :key="video.id || `video-${index}`">
+              <VideoCard 
+                :video="{
+                  id: video.id || `temp-${index}`,
+                  title: video.title || '无标题视频',
+                  coverUrl: video.coverUrl || '',
+                  thumbnailUrl: video.thumbnailUrl || '',
+                  duration: video.duration || 0,
+                  createdAt: video.createdAt || new Date().toISOString(),
+                  fileSize: video.fileSize || 0,
+                  status: video.status || 'public',
+                  description: video.description || '',
+                  format: video.format || '',
+                  stats: video.stats || { views: 0, likes: 0, comments: 0, shares: 0 }
+                }" 
+              />
+            </template>
           </div>
           
           <!-- 空状态 -->
@@ -268,6 +280,7 @@ import { useUserStore } from '@/stores/user'
 import { useVideoStore } from '@/stores/video'
 import VideoCard from '@/components/VideoCard.vue'
 import ProfileEditModal from '@/components/ProfileEditModal.vue'
+import { videoApi } from '@/api/video'
 
 const route = useRoute()
 const profileStore = useProfileStore()
@@ -322,17 +335,27 @@ const loadUserVideos = async (page = 1, reset = false) => {
       videos.value = []
     }
     
-    const { data } = await videoStore.fetchPublicVideos(page, 12, { userId: userId.value })
+    // 使用videoApi替代store方法直接调用API
+    const response = await videoApi.getPublicVideos({
+      page,
+      pageSize: 12,
+      userId: userId.value
+    })
     
-    if (data.code === 0) {
-      if (reset || page === 1) {
-        videos.value = data.data.items
-      } else {
-        videos.value = [...videos.value, ...data.data.items]
+    // 解析响应数据
+    if (response.data && response.data.code === 0 && response.data.data) {
+      const apiData = response.data.data
+      // 确保获取到items数组
+      if (apiData.items && Array.isArray(apiData.items)) {
+        if (reset || page === 1) {
+          videos.value = apiData.items
+        } else {
+          videos.value = [...videos.value, ...apiData.items]
+        }
+        
+        hasMoreVideos.value = videos.value.length < (apiData.total || 0)
+        videosPage.value = page
       }
-      
-      hasMoreVideos.value = videos.value.length < data.data.total
-      videosPage.value = page
     }
   } catch (err) {
     console.error('加载用户视频失败:', err)
