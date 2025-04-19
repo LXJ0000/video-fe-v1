@@ -103,4 +103,15 @@ export interface UnifiedFavoriteList {
   size?: number
   items?: FavoriteItem[]
   favorites?: NewFavoriteItem[]
+}
+
+// 短信验证码登录参数
+export interface SmsLoginParams {
+  phone: string
+  code: string
+}
+
+// 发送短信验证码响应
+export interface SmsCodeResponse {
+  message: string
 } 

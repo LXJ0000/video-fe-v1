@@ -57,6 +57,14 @@
         >
           还没有账号？立即注册
         </router-link>
+        <div class="mt-2">
+          <router-link
+            to="/login/phone"
+            class="font-medium text-primary-light hover:text-primary dark:text-primary-dark dark:hover:text-primary transition-colors duration-200"
+          >
+            使用手机号码登录
+          </router-link>
+        </div>
       </div>
     </div>
   </div>

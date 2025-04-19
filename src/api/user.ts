@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { API_BASE_URL, ApiResponse, publicApiClient, privateApiClient } from './config'
-import type { RegisterParams, LoginParams, LoginResponse } from '@/types/user'
+import type { RegisterParams, LoginParams, LoginResponse, SmsLoginParams, SmsCodeResponse } from '@/types/user'
 
 export const userApi = {
   // 用户注册
@@ -57,5 +57,15 @@ export const userApi = {
     progress: number
   }) {
     return privateApiClient.post<ApiResponse>(`/videos/${videoId}/watch`, data)
+  },
+
+  // 发送短信验证码
+  sendSmsCode(phone: string) {
+    return publicApiClient.post<ApiResponse<SmsCodeResponse>>('/users/send_sms_code', { phone })
+  },
+
+  // 短信验证码登录
+  smsLogin(params: SmsLoginParams) {
+    return publicApiClient.post<ApiResponse<LoginResponse>>('/users/login/sms', params)
   }
 } 

@@ -37,6 +37,11 @@ const router = createRouter({
       component: () => import('../views/auth/RegisterView.vue')
     },
     {
+      path: '/login/phone',
+      name: 'phone-login',
+      component: () => import('../views/auth/PhoneLoginView.vue')
+    },
+    {
       path: '/profile/:userId',
       name: 'profile',
       component: () => import('../views/ProfileView.vue'),
