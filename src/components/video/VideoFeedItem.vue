@@ -190,15 +190,15 @@ const likesCount = computed(() => {
   // 基础数量
   const baseCount = props.video.stats?.likes || 0
   
-  // 如果原本没收藏，现在收藏了，数量+1
-  if (isFavorite.value && !videoDetail.value?.isFavorite) {
-    return formatNumber(baseCount + 1)
-  }
+  // // 如果原本没收藏，现在收藏了，数量+1
+  // if (isFavorite.value && !videoDetail.value?.isFavorite) {
+  //   return formatNumber(baseCount + 1)
+  // }
   
-  // 如果原本收藏了，现在取消了，数量-1
-  if (!isFavorite.value && videoDetail.value?.isFavorite) {
-    return formatNumber(Math.max(0, baseCount - 1))
-  }
+  // // 如果原本收藏了，现在取消了，数量-1
+  // if (!isFavorite.value && videoDetail.value?.isFavorite) {
+  //   return formatNumber(Math.max(0, baseCount - 1))
+  // }
   
   // 默认返回原数量
   return formatNumber(baseCount)
@@ -303,6 +303,7 @@ const handleFavorite = async (e: Event) => {
   e.stopPropagation() // 阻止冒泡
   try {
     if (isFavorite.value) {
+      props.video.stats.likes --
       // 取消收藏
       const success = await profileStore.removeFromFavorite(props.video.id)
       if (success) {
@@ -311,6 +312,7 @@ const handleFavorite = async (e: Event) => {
     } else {
       // 添加收藏
       const success = await profileStore.addToFavorite(props.video.id)
+      props.video.stats.likes ++
       if (success) {
         isFavorite.value = true
       }
