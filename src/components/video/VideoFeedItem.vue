@@ -37,39 +37,63 @@
     </div>
     
     <!-- 右侧操作按钮 -->
-    <div class="absolute right-8 bottom-16 flex flex-col items-center space-y-4">
-      <!-- 作者头像 -->
-      <div class="flex flex-col items-center mb-2">
-        <div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden shadow-lg">
+    <div class="absolute right-8 bottom-16 flex flex-col items-center space-y-6">
+      <!-- 作者头像 - 点击跳转到作者主页 -->
+      <div class="flex flex-col items-center">
+        <button 
+          @click="goToAuthorProfile"
+          class="w-12 h-12 rounded-full border-2 border-white overflow-hidden shadow-lg transform hover:scale-110 transition-all"
+        >
           <img 
             :src="authorAvatar" 
             alt="作者头像" 
             class="w-full h-full object-cover"
           />
-        </div>
+        </button>
       </div>
       
-      <!-- 点赞 -->
-      <button class="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all transform hover:scale-110 shadow-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      <!-- 收藏按钮 - 点击添加/移除收藏 -->
+      <button 
+        @click="handleFavorite"
+        class="p-3 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all transform hover:scale-110 shadow-lg"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          class="h-6 w-6" 
+          :class="isFavorite ? 'text-red-500 fill-current' : 'text-white'"
+          viewBox="0 0 24 24" 
+          :fill="isFavorite ? 'currentColor' : 'none'"
+          stroke="currentColor"
+        >
+          <path 
+            stroke-linecap="round" 
+            stroke-linejoin="round" 
+            stroke-width="2" 
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+          />
         </svg>
-        <span class="block text-sm font-medium text-white mt-1">{{ formatNumber(video.stats?.likes || 0) }}</span>
+        <span class="block text-sm font-medium text-white mt-1">{{ likesCount }}</span>
       </button>
       
-      <!-- 评论 -->
-      <button class="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all transform hover:scale-110 shadow-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <!-- 评论按钮 -->
+      <button 
+        class="p-3 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all transform hover:scale-110 shadow-lg"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
         <span class="block text-sm font-medium text-white mt-1">{{ formatNumber(video.stats?.comments || 0) }}</span>
       </button>
       
-      <!-- 分享 -->
-      <button class="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all transform hover:scale-110 shadow-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <!-- 分享按钮 - 点击复制视频链接 -->
+      <button 
+        @click="shareVideo"
+        class="p-3 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all transform hover:scale-110 shadow-lg"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
         </svg>
+        <span class="block text-sm font-medium text-white mt-1">分享</span>
       </button>
     </div>
     
@@ -91,6 +115,10 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ASSETS_BASE_URL } from '@/api/config'
 import type { VideoItem } from '@/types/video'
 import { videoApi } from '@/api/video'
+import { useRouter } from 'vue-router'
+import { useProfileStore } from '@/stores/profile'
+import { message } from '@/utils/message'
+import { userApi } from '@/api/user'
 
 const props = defineProps<{
   video: VideoItem
@@ -108,11 +136,19 @@ const emit = defineEmits<{
   (e: 'timeupdate', time: number): void
 }>()
 
+// 路由和Store
+const router = useRouter()
+const profileStore = useProfileStore()
+
 // 视频播放器引用
 const videoRef = ref<HTMLVideoElement | null>(null)
 const isPlaying = ref(false)
 const isLoading = ref(true)
 const progress = ref(0)
+const isFavorite = ref(false)
+const videoDetail = ref<any>(null)
+const userInfo = ref<any>(null)
+const isLoadingUser = ref(false)
 
 // 计算属性
 const videoUrl = computed(() => {
@@ -128,6 +164,44 @@ const posterUrl = computed(() => {
     return `${ASSETS_BASE_URL}${props.video.thumbnailUrl}`
   }
   return ''
+})
+
+// 获取作者头像和ID
+const authorId = computed(() => videoDetail.value?.userId || '')
+
+const authorAvatar = computed(() => {
+  // 优先使用从用户接口获取的头像
+  if (userInfo.value?.avatar) {
+    if (userInfo.value.avatar && !userInfo.value.avatar.startsWith("http")) {
+      userInfo.value.avatar = ASSETS_BASE_URL + userInfo.value.avatar;
+      }
+    return userInfo.value.avatar
+  }
+  // 其次使用视频详情中可能包含的用户头像
+  if (videoDetail.value?.user?.avatar) {
+    return videoDetail.value.user.avatar
+  }
+  // 如果都没有，则使用随机头像
+  return getRandomAvatar()
+})
+
+// 点赞/收藏数量，根据收藏状态动态更新
+const likesCount = computed(() => {
+  // 基础数量
+  const baseCount = props.video.stats?.likes || 0
+  
+  // 如果原本没收藏，现在收藏了，数量+1
+  if (isFavorite.value && !videoDetail.value?.isFavorite) {
+    return formatNumber(baseCount + 1)
+  }
+  
+  // 如果原本收藏了，现在取消了，数量-1
+  if (!isFavorite.value && videoDetail.value?.isFavorite) {
+    return formatNumber(Math.max(0, baseCount - 1))
+  }
+  
+  // 默认返回原数量
+  return formatNumber(baseCount)
 })
 
 // 方法
@@ -178,18 +252,93 @@ const getRandomAvatar = () => {
   return `https://randomuser.me/api/portraits/${gender}/${id}.jpg`
 }
 
-// 随机作者ID
-const getRandomAuthorId = () => {
-  return `用户${Math.floor(Math.random() * 10000)}`
+// 获取视频详情
+const fetchVideoDetail = async () => {
+  try {
+    const response = await videoApi.getVideoDetail(props.video.id)
+    if (response.data && response.data.code === 0 && response.data.data) {
+      videoDetail.value = response.data.data.video
+      isFavorite.value = response.data.data.isFavorite || false
+      console.log('视频详情:', videoDetail.value)
+      
+      // 获取到用户ID后，加载用户信息
+      if (response.data.data.video?.userId) {
+        fetchUserInfo(response.data.data.video.userId)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch video detail:', error)
+  }
 }
 
-const authorAvatar = computed(() => getRandomAvatar())
-const authorId = computed(() => getRandomAuthorId())
+// 获取用户信息
+const fetchUserInfo = async (userId: string) => {
+  if (!userId || isLoadingUser.value) return
+  
+  try {
+    isLoadingUser.value = true
+    const response = await userApi.getUserProfile(userId)
+    
+    if (response.data && response.data.code === 0) {
+      userInfo.value = response.data.data
+      console.log('用户信息:', userInfo.value)
+    }
+  } catch (error) {
+    console.error('Failed to fetch user info:', error)
+  } finally {
+    isLoadingUser.value = false
+  }
+}
+
+// 作者头像点击处理 - 跳转到作者主页
+const goToAuthorProfile = (e: Event) => {
+  e.stopPropagation() // 阻止冒泡
+  if (authorId.value) {
+    router.push(`/profile/${authorId.value}`)
+  }
+}
+
+// 收藏处理
+const handleFavorite = async (e: Event) => {
+  e.stopPropagation() // 阻止冒泡
+  try {
+    if (isFavorite.value) {
+      // 取消收藏
+      const success = await profileStore.removeFromFavorite(props.video.id)
+      if (success) {
+        isFavorite.value = false
+      }
+    } else {
+      // 添加收藏
+      const success = await profileStore.addToFavorite(props.video.id)
+      if (success) {
+        isFavorite.value = true
+      }
+    }
+  } catch (error) {
+    console.error('Failed to toggle favorite:', error)
+  }
+}
+
+// 分享视频
+const shareVideo = async (e: Event) => {
+  e.stopPropagation() // 阻止冒泡
+  try {
+    const url = `${window.location.origin}/video/${props.video.id}`
+    await navigator.clipboard.writeText(url)
+    message.success('视频链接已复制到剪贴板')
+  } catch (error) {
+    console.error('Failed to copy link:', error)
+    message.error('复制链接失败')
+  }
+}
 
 // 监听active状态变化
 watch(() => props.active, (newValue) => {
   if (newValue) {
     play()
+    // 当视频激活时获取详情
+    fetchVideoDetail()
   } else {
     pause()
   }
@@ -238,6 +387,11 @@ onMounted(() => {
   
   // 添加空格键事件监听
   window.addEventListener('keydown', handleKeydown)
+  
+  // 如果组件激活，立即获取视频详情
+  if (props.active) {
+    fetchVideoDetail()
+  }
 })
 </script>
 
