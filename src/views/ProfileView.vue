@@ -397,24 +397,23 @@
           <!-- 收藏列表 -->
           <div
             v-else-if="
-              profileStore.favorites &&
-              profileStore.favorites.items &&
-              profileStore.favorites.items.length > 0
+              (profileStore.favorites?.items && profileStore.favorites.items.length > 0) || 
+              (profileStore.favorites?.favorites && profileStore.favorites.favorites.length > 0)
             "
             class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
           >
             <template
-              v-for="(item, index) in profileStore.favorites.items"
+              v-for="(item, index) in (profileStore.favorites?.items || profileStore.favorites?.favorites || [])"
               :key="item?.id || `favorite-${index}`"
             >
               <VideoCard
                 :video="{
                   id: item?.id || `favorite-${index}`,
-                  title: item?.title || '无标题视频',
+                  title: getFavoriteTitle(item),
                   coverUrl: item?.coverUrl || '',
                   thumbnailUrl: '',
-                  duration: item?.duration || 0,
-                  createdAt: item?.createdAt || new Date().toISOString(),
+                  duration: getFavoriteDuration(item),
+                  createdAt: getFavoriteDate(item),
                   fileSize: 0,
                   status: 'public',
                   description: '',
@@ -667,5 +666,23 @@ onMounted(() => {
 const navigateToVideo = (videoId: string) => {
   if (!videoId) return;
   router.push(`/video/${videoId}`);
+};
+
+// 获取收藏项的标题
+const getFavoriteTitle = (item: any) => {
+  if (!item) return '无标题视频';
+  return item.title || item.videoTitle || '无标题视频';
+};
+
+// 获取收藏项的时长
+const getFavoriteDuration = (item: any) => {
+  if (!item) return 0;
+  return item.duration || item.videoDuration || 0;
+};
+
+// 获取收藏项的日期
+const getFavoriteDate = (item: any) => {
+  if (!item) return new Date().toISOString();
+  return item.createdAt || item.addedAt || new Date().toISOString();
 };
 </script>

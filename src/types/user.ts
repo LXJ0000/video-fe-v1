@@ -74,4 +74,33 @@ export interface FavoriteList {
   page: number
   pageSize: number
   items: FavoriteItem[]
+}
+
+// 收藏视频项 (新API格式)
+export interface NewFavoriteItem {
+  id: string
+  userId: string
+  videoId: string
+  videoTitle: string
+  coverUrl: string
+  addedAt: string
+  videoDuration: number
+}
+
+// 收藏列表 (新API格式)
+export interface NewFavoriteList {
+  total: number
+  page: number
+  size: number
+  favorites: NewFavoriteItem[]
+}
+
+// 统一的收藏列表接口
+export interface UnifiedFavoriteList {
+  total: number
+  page: number
+  pageSize?: number
+  size?: number
+  items?: FavoriteItem[]
+  favorites?: NewFavoriteItem[]
 } 

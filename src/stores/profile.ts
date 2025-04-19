@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { userApi } from '@/api/user'
-import type { UserProfile, WatchHistoryList, FavoriteList } from '@/types/user'
+import type { UserProfile, WatchHistoryList, FavoriteList, UnifiedFavoriteList } from '@/types/user'
 import { message } from '@/utils/message'
 
 export const useProfileStore = defineStore('profile', () => {
@@ -18,7 +18,7 @@ export const useProfileStore = defineStore('profile', () => {
   const historyHasMore = ref(false)
 
   // 收藏视频状态
-  const favorites = ref<FavoriteList | null>(null)
+  const favorites = ref<UnifiedFavoriteList | null>(null)
   const isLoadingFavorites = ref(false)
   const favoritesError = ref('')
   const favoritesCurrentPage = ref(1)
@@ -155,44 +155,79 @@ export const useProfileStore = defineStore('profile', () => {
       const { data } = await userApi.getFavorites(userId, page)
       
       if (data?.code === 0 && data?.data) {
-        // 确保data.data.items是数组
-        const items = Array.isArray(data.data.items) ? data.data.items : [];
-        
-        if (reset || page === 1) {
-          favorites.value = {
-            ...data.data,
-            items: items,
-            total: data.data.total || 0,
-            page: data.data.page || page,
-            pageSize: data.data.pageSize || 10
+        // 处理两种可能的响应格式
+        if (data.data.items && Array.isArray(data.data.items)) {
+          // 原有格式处理
+          const items = data.data.items
+          
+          if (reset || page === 1) {
+            favorites.value = {
+              ...data.data,
+              items: items,
+              total: data.data.total || 0,
+              page: data.data.page || page,
+              pageSize: data.data.pageSize || 10
+            }
+          } else if (favorites.value) {
+            // 追加新数据
+            favorites.value = {
+              ...data.data,
+              items: [...(favorites.value.items || []), ...items],
+              total: data.data.total || favorites.value.total || 0,
+              page: data.data.page || page,
+              pageSize: data.data.pageSize || favorites.value.pageSize || 10
+            }
+          } else {
+            favorites.value = {
+              ...data.data,
+              items: items,
+              total: data.data.total || 0,
+              page: data.data.page || page,
+              pageSize: data.data.pageSize || 10
+            }
           }
-        } else if (favorites.value) {
-          // 追加新数据
-          favorites.value = {
-            ...data.data,
-            items: [...(favorites.value.items || []), ...items],
-            total: data.data.total || favorites.value.total || 0,
-            page: data.data.page || page,
-            pageSize: data.data.pageSize || favorites.value.pageSize || 10
-          }
-        } else {
-          favorites.value = {
-            ...data.data,
-            items: items,
-            total: data.data.total || 0,
-            page: data.data.page || page,
-            pageSize: data.data.pageSize || 10
+        } else if (data.data.favorites && Array.isArray(data.data.favorites)) {
+          // 新格式处理
+          const favorites_items = data.data.favorites
+          
+          if (reset || page === 1) {
+            favorites.value = {
+              ...data.data,
+              favorites: favorites_items,
+              total: data.data.total || 0,
+              page: data.data.page || page,
+              pageSize: data.data.size || 10
+            }
+          } else if (favorites.value) {
+            // 追加新数据
+            favorites.value = {
+              ...data.data,
+              favorites: [...(favorites.value.favorites || []), ...favorites_items],
+              total: data.data.total || favorites.value.total || 0,
+              page: data.data.page || page,
+              pageSize: data.data.size || favorites.value.pageSize || 10
+            }
+          } else {
+            favorites.value = {
+              ...data.data,
+              favorites: favorites_items,
+              total: data.data.total || 0,
+              page: data.data.page || page,
+              pageSize: data.data.size || 10
+            }
           }
         }
         
         favoritesCurrentPage.value = page
-        favoritesHasMore.value = items.length >= (data.data.pageSize || 10)
+        favoritesHasMore.value = data.data.total > 
+          ((favorites.value.items?.length || 0) + (favorites.value.favorites?.length || 0))
       } else {
         // 请求成功但返回错误码或没有数据时的兜底处理
         if (page === 1 || reset) {
           // 初始化空的收藏列表
           favorites.value = {
             items: [],
+            favorites: [],
             total: 0,
             page: page,
             pageSize: 10
@@ -206,6 +241,7 @@ export const useProfileStore = defineStore('profile', () => {
       if (page === 1 || reset) {
         favorites.value = {
           items: [],
+          favorites: [],
           total: 0,
           page: page,
           pageSize: 10
