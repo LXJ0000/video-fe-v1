@@ -234,6 +234,7 @@
                     shares: 0,
                   },
                 }"
+                :show-actions="isCurrentUser"
                 @click="navigateToVideo(video.id)"
               />
             </template>
@@ -328,6 +329,7 @@
                   stats: { views: 0, likes: 0, comments: 0, shares: 0 },
                 }"
                 :show-progress="true"
+                :show-actions="false"
                 @click="navigateToVideo(item?.videoId)"
               />
             </template>
@@ -420,6 +422,7 @@
                   format: '',
                   stats: { views: 0, likes: 0, comments: 0, shares: 0 },
                 }"
+                :show-actions="false"
                 @click="navigateToVideo(item?.videoId)"
               />
             </template>
@@ -495,6 +498,7 @@ import VideoCard from "@/components/VideoCard.vue";
 import ProfileEditModal from "@/components/ProfileEditModal.vue";
 import { videoApi } from "@/api/video";
 import { ASSETS_BASE_URL } from "@/api/config";
+import type { VideoItem } from '@/types/video'
 
 const route = useRoute();
 const router = useRouter();
@@ -526,6 +530,7 @@ const videos = ref<any[]>([]);
 const videosPage = ref(1);
 const hasMoreVideos = ref(false);
 const showEditModal = ref(false);
+const videosError = ref(false);
 
 // 加载个人资料
 const loadProfile = async () => {
@@ -548,47 +553,48 @@ const loadProfile = async () => {
   }
 };
 
-// 加载用户上传的视频
-const loadUserVideos = async (page = 1, reset = false) => {
+// 加载用户视频
+const loadUserVideos = async () => {
+  if (isLoadingVideos.value || (!hasMoreVideos.value && videosPage.value > 1)) return
+  
+  isLoadingVideos.value = true
+  videosError.value = false
+  
   try {
-    isLoadingVideos.value = true;
-
-    if (reset) {
-      videos.value = [];
-    }
-
-    // 使用videoApi替代store方法直接调用API
     const response = await videoApi.getPublicVideos({
-      page,
+      page: videosPage.value,
       pageSize: 12,
-      userId: userId.value,
-    });
-
-    // 解析响应数据
-    if (response.data && response.data.code === 0 && response.data.data) {
-      const apiData = response.data.data;
-      // 确保获取到items数组
-      if (apiData.items && Array.isArray(apiData.items)) {
-        if (reset || page === 1) {
-          videos.value = apiData.items;
-        } else {
-          videos.value = [...videos.value, ...apiData.items];
-        }
-
-        hasMoreVideos.value = videos.value.length < (apiData.total || 0);
-        videosPage.value = page;
+      userId: userId.value
+    })
+    
+    const apiData = response.data.data
+    
+    if (apiData && Array.isArray(apiData.items)) {
+      // 如果是第一页，重置视频列表
+      if (videosPage.value === 1) {
+        videos.value = apiData.items
+      } else {
+        videos.value = [...videos.value, ...apiData.items]
       }
+      
+      hasMoreVideos.value = apiData.items.length === 12
+      if (hasMoreVideos.value) {
+        videosPage.value++
+      }
+    } else {
+      hasMoreVideos.value = false
     }
-  } catch (err) {
-    console.error("加载用户视频失败:", err);
+  } catch (error) {
+    console.error('加载用户视频失败:', error)
+    videosError.value = true
   } finally {
-    isLoadingVideos.value = false;
+    isLoadingVideos.value = false
   }
-};
+}
 
 // 加载更多视频
 const loadMoreVideos = () => {
-  loadUserVideos(videosPage.value + 1);
+  loadUserVideos();
 };
 
 // 加载更多历史记录
@@ -610,7 +616,7 @@ const loadMoreFavorites = () => {
 // 处理标签切换
 watch(activeTab, (newTab) => {
   if (newTab === "videos" && videos.value.length === 0) {
-    loadUserVideos(1, true);
+    loadUserVideos();
   } else if (
     newTab === "history" &&
     (!profileStore.watchHistory ||
@@ -650,7 +656,11 @@ watch(
     profileStore.resetState();
     loadProfile();
     if (activeTab.value === "videos") {
-      loadUserVideos(1, true);
+      // 重置视频页码和设置hasMoreVideos
+      videosPage.value = 1;
+      videos.value = [];
+      hasMoreVideos.value = true;
+      loadUserVideos();
     }
   },
   { immediate: false }
@@ -659,7 +669,10 @@ watch(
 // 页面加载时获取数据
 onMounted(() => {
   loadProfile();
-  loadUserVideos(1, true);
+  // 重置视频页码和设置hasMoreVideos
+  videosPage.value = 1;
+  hasMoreVideos.value = true; 
+  loadUserVideos();
 });
 
 // 视频卡片点击跳转

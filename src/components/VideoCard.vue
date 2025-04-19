@@ -29,7 +29,7 @@
         </div>
 
         <!-- 操作菜单 -->
-        <div class="absolute top-2 right-2 z-10 video-action-menu" @click.stop>
+        <div v-if="props.showActions !== false" class="absolute top-2 right-2 z-10 video-action-menu" @click.stop>
           <VideoActionMenu
             :video="video"
             @edit="handleEdit"
@@ -132,6 +132,8 @@ import { ASSETS_BASE_URL } from '../api/config'
 
 const props = defineProps<{
   video: VideoItem
+  showActions?: boolean // 是否显示操作菜单
+  showProgress?: boolean // 是否显示进度条
 }>()
 
 const emit = defineEmits<{
