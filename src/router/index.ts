@@ -7,44 +7,44 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../views/HomeView.vue'),
+      component: () => import('@/views/HomeView.vue'),
       meta: { keepAlive: false }
     },
     {
       path: '/manage',
       name: 'manage',
-      component: () => import('../views/VideoManageView.vue'),
+      component: () => import('@/views/VideoManageView.vue'),
       meta: { requiresAuth: true, keepAlive: false }
     },
     {
       path: '/video/:id',
       name: 'video',
-      component: () => import('../views/VideoView.vue')
+      component: () => import('@/views/VideoView.vue')
     },
     {
       path: '/feed',
       name: 'feed',
-      component: () => import('../views/VideoFeedView.vue')
+      component: () => import('@/views/VideoFeedView.vue')
     },
     {
       path: '/login',
       name: 'login',
-      component: () => import('../views/auth/LoginView.vue')
+      component: () => import('@/views/auth/LoginView.vue')
     },
     {
       path: '/register',
       name: 'register',
-      component: () => import('../views/auth/RegisterView.vue')
+      component: () => import('@/views/auth/RegisterView.vue')
     },
     {
       path: '/login/phone',
       name: 'phone-login',
-      component: () => import('../views/auth/PhoneLoginView.vue')
+      component: () => import('@/views/auth/PhoneLoginView.vue')
     },
     {
       path: '/profile/:userId',
       name: 'profile',
-      component: () => import('../views/ProfileView.vue'),
+      component: () => import('@/views/ProfileView.vue'),
       meta: { title: '个人主页' }
     }
   ]
