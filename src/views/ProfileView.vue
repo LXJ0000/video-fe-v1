@@ -231,6 +231,7 @@
                     shares: 0,
                   },
                 }"
+                @click="navigateToVideo(video.id)"
               />
             </template>
           </div>
@@ -324,6 +325,7 @@
                   stats: { views: 0, likes: 0, comments: 0, shares: 0 },
                 }"
                 :show-progress="true"
+                @click="navigateToVideo(item?.videoId)"
               />
             </template>
           </div>
@@ -416,6 +418,7 @@
                   format: '',
                   stats: { views: 0, likes: 0, comments: 0, shares: 0 },
                 }"
+                @click="navigateToVideo(item?.videoId)"
               />
             </template>
           </div>
@@ -482,7 +485,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useProfileStore } from "@/stores/profile";
 import { useUserStore } from "@/stores/user";
 import { useVideoStore } from "@/stores/video";
@@ -492,6 +495,7 @@ import { videoApi } from "@/api/video";
 import { ASSETS_BASE_URL } from "@/api/config";
 
 const route = useRoute();
+const router = useRouter();
 const profileStore = useProfileStore();
 const userStore = useUserStore();
 const videoStore = useVideoStore();
@@ -655,4 +659,10 @@ onMounted(() => {
   loadProfile();
   loadUserVideos(1, true);
 });
+
+// 视频卡片点击跳转
+const navigateToVideo = (videoId: string) => {
+  if (!videoId) return;
+  router.push(`/video/${videoId}`);
+};
 </script>
