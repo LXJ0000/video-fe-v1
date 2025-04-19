@@ -109,7 +109,10 @@
               </p>
 
               <!-- 编辑按钮（仅对当前用户显示） -->
-              <div v-if="isCurrentUser" class="mt-4">
+              <div
+                v-if="isCurrentUser"
+                class="mt-4 flex justify-center md:justify-start"
+              >
                 <button
                   @click="showEditModal = true"
                   class="flex items-center justify-center px-3 py-1.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-lg hover:shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
