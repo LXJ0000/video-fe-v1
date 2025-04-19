@@ -50,7 +50,9 @@
           <!-- 左侧头像和基本信息 -->
           <div class="p-8 text-center md:text-left md:flex md:items-center">
             <!-- 头像 -->
-            <div class="flex-shrink-0 mx-auto md:mx-0 mb-4 md:mb-0 md:mr-6">
+            <div
+              class="flex-shrink-0 mx-auto md:mx-0 mb-4 md:mb-0 md:mr-6 flex justify-center items-center"
+            >
               <div
                 class="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700"
               >
@@ -120,7 +122,7 @@
 
           <!-- 右侧统计信息 -->
           <div
-            class="border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 p-8 bg-gray-50 dark:bg-gray-800/50"
+            class="border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 p-8 dark:bg-gray-800/50"
           >
             <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
               数据统计
@@ -515,7 +517,10 @@ const loadProfile = async () => {
     isLoading.value = true;
     error.value = "";
     await profileStore.fetchUserProfile(userId.value);
-    if (profileStore.userProfile.avatar !== null) {
+    if (
+      profileStore.userProfile.avatar &&
+      !profileStore.userProfile.avatar.startsWith("http")
+    ) {
       profileStore.userProfile.avatar =
         ASSETS_BASE_URL + profileStore.userProfile.avatar;
     }
