@@ -435,16 +435,86 @@ const routes = [
 
 2. 虚拟列表实现
 ```typescript
-// 视频列表虚拟滚动
-const videoList = ref<Video[]>([])
-const containerHeight = ref(800)
-const itemHeight = 200
-const visibleCount = computed(() => Math.ceil(containerHeight.value / itemHeight))
-
-const visibleVideos = computed(() => {
-  const start = Math.floor(scrollTop.value / itemHeight)
-  const end = Math.min(start + visibleCount.value, videoList.value.length)
-  return videoList.value.slice(start, end)
+// 视频流的虚拟列表实现
+export default defineComponent({
+  setup() {
+    // 状态和引用
+    const containerRef = ref<HTMLElement | null>(null)
+    const currentIndex = ref(0)
+    const isLoadingMore = ref(false)
+    
+    // 计算属性
+    const canGoPrev = computed(() => currentIndex.value > 0)
+    const canGoNext = computed(() => currentIndex.value < props.videos.length - 1)
+    
+    // 手势处理
+    const startY = ref(0)
+    const endY = ref(0)
+    const SWIPE_THRESHOLD = 100 // 滑动阈值
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      startY.value = e.touches[0].clientY
+    }
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      if (startY.value === 0) return
+      endY.value = e.touches[0].clientY
+    }
+    
+    const handleTouchEnd = () => {
+      if (startY.value === 0 || endY.value === 0) return
+      
+      const deltaY = startY.value - endY.value
+      
+      if (Math.abs(deltaY) > SWIPE_THRESHOLD) {
+        if (deltaY > 0 && canGoNext.value) {
+          goToNext()
+        } else if (deltaY < 0 && canGoPrev.value) {
+          goToPrev()
+        }
+      }
+      
+      // 重置
+      startY.value = 0
+      endY.value = 0
+    }
+    
+    // 导航方法
+    const goToNext = () => {
+      if (canGoNext.value) {
+        currentIndex.value++
+        emit('change', currentIndex.value)
+        
+        // 提前加载更多内容
+        if (currentIndex.value >= props.videos.length - 2) {
+          isLoadingMore.value = true
+          emit('load-more')
+        }
+      }
+    }
+    
+    // 视频列表管理中的虚拟列表
+    const loadMore = async () => {
+      if (isLoadingMore.value) return
+      try {
+        isLoadingMore.value = true
+        currentPage.value++
+        const response = await videoStore.fetchVideos(currentPage.value, 12, {
+          status: filters.status,
+          sortBy: filters.sortBy,
+          sortOrder: filters.sortOrder,
+        })
+        hasMore.value = response.data.total > videoStore.videos.length
+      } catch (err) {
+        console.error("Load more failed:", err)
+        currentPage.value--
+      } finally {
+        isLoadingMore.value = false
+      }
+    }
+    
+    return { /* ... */ }
+  }
 })
 ```
 
@@ -614,4 +684,378 @@ describe('noteStore', () => {
 - 播放速度变化平滑，可能需要短暂时间达到目标速度
 - 移动端自动收起侧边栏以优化显示
 - 部分高级功能需要用户登录
-- 支持主流现代浏览器 
+- 支持主流现代浏览器
+- 建议使用 Chrome 或 Firefox 最新版获得最佳体验
+- 标记和笔记功能在登录后才可使用 
+
+## 标记系统实现
+
+标记系统允许用户在视频的特定时间点添加标记和注释，方便后续快速定位。
+
+### 数据模型
+
+```typescript
+// 标记数据结构
+export interface Mark {
+  id: string
+  userId: string
+  videoId: string
+  timestamp: number // 视频时间点
+  content: string
+  annotations: Annotation[] | null
+  createdAt: string
+  updatedAt: string
+}
+
+// 注释数据结构
+export interface Annotation {
+  id: string
+  markId: string
+  content: string
+  createdAt: string
+  updatedAt: string
+}
+```
+
+### 状态管理
+
+```typescript
+export const useMarksStore = defineStore('marks', () => {
+  const userStore = useUserStore()
+  const currentVideoId = ref<string>('')
+  const marks = ref<Mark[]>([])
+  
+  // 获取视频标记
+  const fetchMarks = async (videoId: string) => {
+    try {
+      if (!userStore.isAuthenticated) {
+        throw new Error('用户未登录')
+      }
+      currentVideoId.value = videoId
+      const { data } = await videoApi.getMarks(videoId)
+      if (data.code === 0) {
+        if (data.data !== null) {
+          marks.value = data.data.map((mark: Mark) => ({
+            ...mark,
+            annotations: mark.annotations || [], // 确保 annotations 始终是数组
+          }))
+        } else {
+          marks.value = []
+        }
+      }
+    } catch (error) {
+      message.error('获取标记失败')
+      console.error('Failed to fetch marks:', error)
+    }
+  }
+  
+  // 添加标记
+  const addMark = async (markData: { videoId: string; timestamp: number; content: string }) => {
+    // 实现添加标记的逻辑
+  }
+  
+  // 更新标记
+  const updateMark = async (markId: string, data: UpdateMarkParams) => {
+    // 实现更新标记的逻辑
+  }
+  
+  // 删除标记
+  const deleteMark = async (markId: string) => {
+    // 实现删除标记的逻辑
+  }
+  
+  // 其它标记相关方法...
+  
+  return {
+    marks,
+    fetchMarks,
+    addMark,
+    updateMark,
+    addAnnotation,
+    updateAnnotation,
+    deleteAnnotation,
+    deleteMark
+  }
+})
+```
+
+## 笔记系统实现
+
+笔记系统允许用户在视频播放过程中添加笔记，记录学习内容和心得。
+
+### 数据模型
+
+```typescript
+// 笔记数据结构
+export interface Note {
+  id: string
+  videoId: string
+  userId: string
+  content: string
+  timestamp: number // 视频时间点
+  createdAt: string
+  updatedAt: string
+}
+```
+
+### 状态管理
+
+```typescript
+export const useNotesStore = defineStore("notes", () => {
+  const userStore = useUserStore();
+  const notes = ref<Note[]>([]);
+  const currentVideoId = ref<string>("");
+
+  const fetchNotes = async (videoId: string) => {
+    try {
+      if (!userStore.isAuthenticated) {
+        throw new Error("用户未登录");
+      }
+
+      currentVideoId.value = videoId;
+      const { data } = await videoApi.getNotes(videoId);
+      if (data.code === 0) {
+        notes.value = data.data;
+      } else {
+        message.error(data.msg || "获取笔记失败");
+      }
+    } catch (error) {
+      message.error("获取笔记失败");
+      console.error("Failed to fetch notes:", error);
+    }
+  };
+
+  const addNote = async (noteData: {
+    videoId: string;
+    timestamp: number;
+    content: string;
+  }) => {
+    try {
+      if (!notes.value) {
+        notes.value = [];
+      }
+      const { data } = await videoApi.addNote(noteData);
+      if (data.code === 0) {
+        notes.value.push(data.data);
+        message.success("添加笔记成功");
+      } else {
+        message.error(data.msg || "添加笔记失败");
+      }
+    } catch (error) {
+      message.error("添加笔记失败");
+      console.error("Failed to add note:", error);
+    }
+  };
+  
+  // 更新和删除笔记的实现...
+  
+  return {
+    notes,
+    fetchNotes,
+    addNote,
+    updateNote,
+    deleteNote,
+  };
+});
+```
+
+## 智能调速系统实现
+
+智能调速系统通过实时分析音频，自动调整播放速度以匹配用户设定的目标语速。
+
+### 核心实现
+
+```typescript
+export const usePlaybackStore = defineStore('playback', () => {
+  // 用户偏好设置
+  const userPreferences = ref<UserPreferences>({
+    targetWPM: 150,
+    speedRange: {
+      min: 0.25,
+      max: 3.0
+    }
+  })
+
+  const isAutoSpeedEnabled = ref(false)
+  const currentWPM = ref(0)
+  const currentSpeed = ref(1)
+  
+  // 调整平滑因子，使变化更平缓
+  const smoothingFactor = 0.1
+  let lastWPM = 0
+
+  // 语速计算逻辑
+  const suggestedSpeed = computed(() => {
+    if (!isAutoSpeedEnabled.value || currentWPM.value === 0) {
+      return 1
+    }
+    
+    // 目标语速与当前语速的比率
+    const targetSpeed = userPreferences.value.targetWPM / currentWPM.value
+    
+    // 逐步调整速度，避免突变
+    let newSpeed = currentSpeed.value
+    
+    if (targetSpeed > currentSpeed.value) {
+      // 当前语速过慢，需要加快
+      newSpeed = Math.min(currentSpeed.value + 0.1, targetSpeed)
+    } else if (targetSpeed < currentSpeed.value) {
+      // 当前语速过快，需要减慢
+      newSpeed = Math.max(currentSpeed.value - 0.1, targetSpeed)
+    }
+    
+    // 限制在允许范围内
+    newSpeed = Math.max(
+      Math.min(newSpeed, userPreferences.value.speedRange.max),
+      userPreferences.value.speedRange.min
+    )
+    
+    // 更新当前速度
+    currentSpeed.value = newSpeed
+    return newSpeed
+  })
+
+  // 音频分析方法
+  const analyzeSpeech = async (audioData: Float32Array) => {
+    try {
+      let sum = 0
+      let count = 0
+      
+      const threshold = 0.02
+      
+      for (let i = 0; i < audioData.length; i++) {
+        if (Math.abs(audioData[i]) > threshold) {
+          sum += Math.abs(audioData[i])
+          count++
+        }
+      }
+      
+      const volume = count > 0 ? sum / count : 0
+      
+      // 调整WPM计算
+      const baseWPM = userPreferences.value.targetWPM
+      const volumeScale = 1000
+      
+      // 根据音量调整WPM，使其围绕目标值波动
+      let newWPM = baseWPM * (1 + (volume * volumeScale / baseWPM - 0.5))
+      
+      // 限制WPM的范围
+      newWPM = Math.max(
+        Math.min(newWPM, baseWPM * 1.5),
+        baseWPM * 0.5
+      )
+      
+      // 应用平滑处理
+      newWPM = lastWPM * (1 - smoothingFactor) + newWPM * smoothingFactor
+      lastWPM = newWPM
+      
+      currentWPM.value = Math.round(newWPM)
+    } catch (error) {
+      console.error('Speech analysis failed:', error)
+      currentWPM.value = userPreferences.value.targetWPM
+    }
+  }
+  
+  // 其它方法实现...
+  
+  return {
+    isAutoSpeedEnabled,
+    currentWPM,
+    currentSpeed,
+    userPreferences,
+    suggestedSpeed,
+    analyzeSpeech,
+    loadPreferences,
+    savePreferences,
+    reset
+  }
+})
+```
+
+## 项目架构图
+
+```
+@startuml
+package "前端架构" {
+  [Vue 3 应用] as App
+  
+  package "视图层" {
+    [HomeView] as HomeView
+    [VideoView] as VideoView
+    [ProfileView] as ProfileView
+    [VideoManageView] as VideoManageView
+    [VideoFeedView] as VideoFeedView
+    [Auth视图] as AuthView
+  }
+  
+  package "组件层" {
+    [视频播放器组件] as VideoPlayer
+    [视频卡片组件] as VideoCard
+    [视频上传组件] as UploadDialog
+    [标记/笔记组件] as MarksNotes
+    [布局组件] as Layout
+    [通用UI组件] as CommonUI
+  }
+  
+  package "状态管理" {
+    [用户状态] as UserStore
+    [视频状态] as VideoStore
+    [标记状态] as MarksStore
+    [笔记状态] as NotesStore
+    [播放状态] as PlaybackStore
+    [主题状态] as ThemeStore
+    [历史记录] as HistoryStore
+    [用户资料] as ProfileStore
+  }
+  
+  package "API服务" {
+    [视频API] as VideoAPI
+    [用户API] as UserAPI
+    [标记API] as MarksAPI
+    [笔记API] as NotesAPI
+  }
+  
+  package "工具层" {
+    [音频分析] as AudioTools
+    [视频处理] as VideoTools
+    [消息提示] as MessageUtil
+    [存储工具] as StorageUtil
+  }
+  
+  ' 视图层关系
+  App --> HomeView
+  App --> VideoView
+  App --> ProfileView
+  App --> VideoManageView
+  App --> VideoFeedView
+  App --> AuthView
+  
+  ' 视图与组件关系
+  VideoView --> VideoPlayer
+  VideoView --> MarksNotes
+  HomeView --> VideoCard
+  VideoManageView --> VideoCard
+  VideoManageView --> UploadDialog
+  VideoFeedView --> VideoPlayer
+  
+  ' 组件与状态关系
+  VideoPlayer --> PlaybackStore
+  VideoPlayer --> HistoryStore
+  MarksNotes --> MarksStore
+  MarksNotes --> NotesStore
+  VideoCard --> VideoStore
+  
+  ' 状态与API关系
+  VideoStore --> VideoAPI
+  UserStore --> UserAPI
+  MarksStore --> MarksAPI
+  NotesStore --> NotesAPI
+  
+  ' 工具层关系
+  PlaybackStore --> AudioTools
+  VideoPlayer --> VideoTools
+  VideoStore ..> MessageUtil
+  UserStore ..> StorageUtil
+}
+@enduml
+``` 
