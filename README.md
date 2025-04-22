@@ -49,6 +49,7 @@ VideoHub 是一个现代化视频分享与学习平台，提供视频上传、�
 - [x] 用户注册/登录（前端基础功能已实现）
 - [x] 用户状态管理
 - [x] 基础认证路由守卫
+- [x] 短信验证码登录（支持60秒倒计时）
 
 ### 进行中功能
 
@@ -206,6 +207,166 @@ src/
    参数：
    - `username`: 用户名
    - `password`: 密码
+
+3. 发送短信验证码
+   ```
+   POST /users/send_sms_code
+   Content-Type: application/json
+   ```
+   参数：
+   - `phone`: 手机号码
+
+4. 短信验证码登录
+   ```
+   POST /users/login/sms
+   Content-Type: application/json
+   ```
+   参数：
+   - `phone`: 手机号码
+   - `code`: 验证码
+
+## 用户系统实现
+
+### 短信验证码登录
+
+短信验证码登录为用户提供了一种无需记住密码的登录方式，通过验证手机号码所有权实现安全登录。
+
+#### 数据模型
+
+```typescript
+// 短信验证码登录参数
+export interface SmsLoginParams {
+  phone: string
+  code: string
+}
+
+// 发送短信验证码响应
+export interface SmsCodeResponse {
+  message: string
+}
+```
+
+#### 状态管理
+
+```typescript
+export const useUserStore = defineStore('user', () => {
+  // ... 其他状态和方法
+
+  // 发送短信验证码
+  const sendSmsCode = async (phone: string) => {
+    try {
+      const { data } = await userApi.sendSmsCode(phone)
+      if (data.code === 0) {
+        message.success('验证码已发送')
+        return true
+      } else {
+        message.error(data.msg || '发送验证码失败')
+        return false
+      }
+    } catch (error: any) {
+      if (error.response?.status === 429) {
+        message.error('请求过于频繁，请稍后再试')
+      } else {
+        message.error('发送验证码失败，请稍后重试')
+      }
+      return false
+    }
+  }
+
+  // 短信验证码登录
+  const smsLogin = async (params: SmsLoginParams) => {
+    try {
+      const { data } = await userApi.smsLogin(params)
+      if (data.code === 0) {
+        currentUser.value = data.data.user
+        token.value = data.data.token
+        isAuthenticated.value = true
+        
+        // 保存到 localStorage
+        localStorage.setItem('user', JSON.stringify(data.data.user))
+        localStorage.setItem('token', data.data.token)
+        
+        message.success('登录成功')
+        return true
+      } else {
+        message.error(data.msg || '登录失败')
+        return false
+      }
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        message.error('验证码错误或已过期')
+      } else if (error.response?.status === 403) {
+        message.error('账号被禁用')
+      } else {
+        message.error('登录失败，请稍后重试')
+      }
+      return false
+    }
+  }
+
+  return {
+    // ... 其他返回
+    sendSmsCode,
+    smsLogin
+  }
+})
+```
+
+#### 前端实现
+
+手机号验证码登录组件实现了以下功能：
+
+1. 手机号格式验证（采用正则表达式 `/^1[3-9]\d{9}$/` 验证中国大陆手机号）
+2. 验证码发送功能，包含60秒冷却时间倒计时
+3. 登录表单验证和提交处理
+4. 登录成功后的路由跳转
+
+关键代码：
+
+```typescript
+// 发送验证码
+const sendCode = async () => {
+  // 手机号验证
+  const phoneRegex = /^1[3-9]\d{9}$/
+  if (!phoneRegex.test(form.value.phone)) {
+    return
+  }
+
+  isSending.value = true
+  try {
+    const success = await userStore.sendSmsCode(form.value.phone)
+    if (success) {
+      // 开始倒计时
+      cooldown.value = 60
+      timer = window.setInterval(() => {
+        cooldown.value--
+        if (cooldown.value <= 0) {
+          clearInterval(timer as number)
+          timer = null
+        }
+      }, 1000)
+    }
+  } finally {
+    isSending.value = false
+  }
+}
+
+// 登录处理
+const handleLogin = async () => {
+  isLoading.value = true
+  try {
+    const success = await userStore.smsLogin(form.value)
+    if (success) {
+      const redirectPath = route.query.redirect as string || '/'
+      router.push(redirectPath)
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+```
+
+该功能也集成在统一的认证模态框中，用户可以在密码登录和短信验证码登录之间快速切换。
 
 ## 智能调速功能实现
 
@@ -1011,6 +1172,7 @@ package "前端架构" {
   package "API服务" {
     [视频API] as VideoAPI
     [用户API] as UserAPI
+    [短信验证码API] as SmsAPI
     [标记API] as MarksAPI
     [笔记API] as NotesAPI
   }
