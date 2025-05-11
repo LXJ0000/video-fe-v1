@@ -530,8 +530,22 @@ const loadVideo = async () => {
     isLoading.value = true
     error.value = ''
     const response = await videoApi.getVideoDetail(route.params.id as string)
-    video.value = response.data.data
-    videoStreamUrl.value = videoApi.getVideoStreamUrl(route.params.id as string)
+    
+    // 适配新的数据结构
+    if (response.data?.code === 0 && response.data?.data?.video) {
+      video.value = response.data.data.video
+      // 如果视频流URL在响应中
+      if (response.data.data.streamUrl) {
+        videoStreamUrl.value = response.data.data.streamUrl
+      } else {
+        // 否则使用原有方式获取
+        videoStreamUrl.value = videoApi.getVideoStreamUrl(route.params.id as string)
+      }
+    } else {
+      throw new Error('视频数据格式错误')
+    }
+    
+    console.log('Video data:', video.value)
     console.log('Stream URL:', videoStreamUrl.value)
   } catch (err) {
     console.error('Load video error details:', err)
