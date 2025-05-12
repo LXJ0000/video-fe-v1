@@ -174,9 +174,21 @@ const handleDelete = async (noteId: string) => {
   }
 }
 
-// Markdown 转 HTML
+/**
+ * 配置 marked 以支持 GFM（GitHub Flavored Markdown），增强 Markdown 渲染能力
+ */
+marked.setOptions({
+  gfm: true,
+  breaks: true
+})
+
+/**
+ * 将 Markdown 文本转换为安全的 HTML 字符串
+ * @param {string} content - Markdown 格式的文本内容
+ * @returns {string} 安全的 HTML 字符串
+ */
 const markdownToHtml = (content: string) => {
-  return DOMPurify.sanitize(marked(content))
+  return DOMPurify.sanitize(marked.parse(content))
 }
 </script>
 

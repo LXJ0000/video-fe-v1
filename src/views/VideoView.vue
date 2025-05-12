@@ -586,6 +586,7 @@ const initAudioAnalysis = async () => {
   if (!videoPlayer.value || isAudioInitialized.value) return
   
   try {
+    console.log('Initializing audio analysis...')
     audioContext.value = new AudioContext()
     await audioContext.value.resume()
     
@@ -598,6 +599,7 @@ const initAudioAnalysis = async () => {
     analyser.value.connect(audioContext.value.destination)
     
     isAudioInitialized.value = true
+    console.log('Audio analysis initialized successfully')
     
     // 开始分析
     startAnalysis()
@@ -622,6 +624,7 @@ const analyzeAudio = () => {
     if (isPlayerReady(player.value)) {
       try {
         const newSpeed = playbackStore.suggestedSpeed
+        console.log('Updating speed:', { current: player.value.speed, new: newSpeed })
         player.value.speed = newSpeed
         currentSpeed.value = newSpeed
       } catch (err) {
@@ -635,21 +638,29 @@ const analyzeAudio = () => {
 
 // 修改播放器初始化
 const handlePlay = async () => {
+  console.log('Video play event triggered')
+  isPlaying.value = true
+  
   if (!isAudioInitialized.value) {
+    console.log('Initializing audio on first play')
     await initAudioAnalysis()
-    await new Promise(resolve => setTimeout(resolve, 100))
-    if (playbackStore.isAutoSpeedEnabled) {
-      startAnalysis()
-    }
+  } else if (playbackStore.isAutoSpeedEnabled) {
+    console.log('Restarting analysis')
+    startAnalysis()
   }
 }
 
 // 修改开始分析函数
 const startAnalysis = () => {
+  console.log('Starting audio analysis')
   stopAnalysis()
   
   if (isPlayerReady(player.value)) {
-    analyzeTimer.value = window.setInterval(analyzeAudio, 200)
+    analyzeTimer.value = window.setInterval(() => {
+      if (isPlaying.value && playbackStore.isAutoSpeedEnabled) {
+        analyzeAudio()
+      }
+    }, 200)
   }
 }
 
@@ -798,11 +809,13 @@ onUnmounted(() => {
 
 // 监听智能调速开关
 watch(() => playbackStore.isAutoSpeedEnabled, (enabled) => {
+  console.log('Auto speed enabled changed:', enabled)
   if (enabled) {
     if (!isAudioInitialized.value) {
       initAudioAnalysis()
+    } else {
+      startAnalysis()
     }
-    startAnalysis()
   } else {
     stopAnalysis()
     // 恢复正常播放速度
